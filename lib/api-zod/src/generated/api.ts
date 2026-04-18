@@ -1122,6 +1122,21 @@ export const GetTopEventsResponseItem = zod.object({
 export const GetTopEventsResponse = zod.array(GetTopEventsResponseItem);
 
 /**
+ * @summary Get upcoming events sorted by nearest date first
+ */
+export const GetUpcomingEventsResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  date: zod.string(),
+  eventType: zod.string(),
+  status: zod.string(),
+  location: zod.string(),
+});
+export const GetUpcomingEventsResponse = zod.array(
+  GetUpcomingEventsResponseItem,
+);
+
+/**
  * @summary Revenue breakdown by event
  */
 export const GetRevenueByEventResponseItem = zod.object({

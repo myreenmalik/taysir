@@ -225,4 +225,24 @@ router.get("/dashboard/top-events", async (_req, res): Promise<void> => {
   res.json(eventPerformance.slice(0, 10));
 });
 
+router.get("/dashboard/upcoming-events", async (_req, res): Promise<void> => {
+  const events = await db.select().from(eventsTable);
+  const today = new Date();
+
+  const upcoming = events
+    .filter(e => new Date(e.date) > today && e.status !== "closed")
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(0, 10)
+    .map(e => ({
+      id: e.id,
+      name: e.name,
+      date: e.date,
+      eventType: e.eventType,
+      status: e.status,
+      location: e.location,
+    }));
+
+  res.json(upcoming);
+});
+
 export default router;

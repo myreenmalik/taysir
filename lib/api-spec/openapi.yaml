@@ -956,6 +956,21 @@ paths:
                 items:
                   $ref: "#/components/schemas/EventPerformance"
 
+  /dashboard/upcoming-events:
+    get:
+      operationId: getUpcomingEvents
+      tags: [dashboard]
+      summary: Get upcoming events sorted by nearest date first
+      responses:
+        "200":
+          description: Upcoming events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UpcomingEvent"
+
   # ==================== REPORTS ====================
   /reports/revenue-by-event:
     get:
@@ -1973,6 +1988,29 @@ components:
         - investor
         - repayer
         - totalDonors
+
+    UpcomingEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        date:
+          type: string
+        eventType:
+          type: string
+        status:
+          type: string
+        location:
+          type: string
+      required:
+        - id
+        - name
+        - date
+        - eventType
+        - status
+        - location
 
     EventPerformance:
       type: object

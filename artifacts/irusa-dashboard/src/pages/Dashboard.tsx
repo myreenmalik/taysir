@@ -1,4 +1,4 @@
-import { useGetDashboardSummary, useGetDashboardAlerts, useGetDonorSegments, useGetTopEvents, getGetDashboardSummaryQueryKey, getGetDashboardAlertsQueryKey, getGetDonorSegmentsQueryKey, getGetTopEventsQueryKey } from "@workspace/api-client-react";
+import { useGetDashboardSummary, useGetDashboardAlerts, useGetDonorSegments, useGetTopEvents, useGetUpcomingEvents, getGetDashboardSummaryQueryKey, getGetDashboardAlertsQueryKey, getGetDonorSegmentsQueryKey, getGetTopEventsQueryKey, getGetUpcomingEventsQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -10,8 +10,9 @@ export default function Dashboard() {
   const { data: alerts, isLoading: loadingAlerts } = useGetDashboardAlerts({ query: { queryKey: getGetDashboardAlertsQueryKey() } });
   const { data: donorSegments, isLoading: loadingSegments } = useGetDonorSegments({ query: { queryKey: getGetDonorSegmentsQueryKey() } });
   const { data: topEvents, isLoading: loadingTopEvents } = useGetTopEvents({ query: { queryKey: getGetTopEventsQueryKey() } });
+  const { data: upcomingEvents, isLoading: loadingUpcomingEvents } = useGetUpcomingEvents({ query: { queryKey: getGetUpcomingEventsQueryKey() } });
 
-  if (loadingSummary || loadingAlerts || loadingSegments || loadingTopEvents) {
+  if (loadingSummary || loadingAlerts || loadingSegments || loadingTopEvents || loadingUpcomingEvents) {
     return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading dashboard data...</div>;
   }
 
@@ -131,6 +132,35 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle>Upcoming Events</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {upcomingEvents && upcomingEvents.length > 0 ? (
+              <div className="space-y-4">
+                {upcomingEvents.map((event) => (
+                  <div key={event.id} className="flex items-center justify-between pb-4 border-b last:border-0 last:pb-0">
+                    <div>
+                      <Link href={`/events/${event.id}`} className="font-medium hover:underline">{event.name}</Link>
+                      <div className="text-sm text-muted-foreground flex gap-2 items-center mt-1">
+                        <Badge variant="outline" className="capitalize text-xs font-normal">{event.eventType}</Badge>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium">{new Date(event.date).toLocaleDateString()}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No upcoming events scheduled.</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Donor Segments</CardTitle>

@@ -536,6 +536,15 @@ export interface DonorSegmentSummary {
   totalDonors: number;
 }
 
+export interface UpcomingEvent {
+  id: number;
+  name: string;
+  date: string;
+  eventType: string;
+  status: string;
+  location: string;
+}
+
 export interface EventPerformance {
   eventId: number;
   eventName: string;
