@@ -1,27 +1,77 @@
-# Workspace
+# IRUSA Smart Event & Donor Intelligence Dashboard
 
-## Overview
+## Project Overview
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+A hackathon-ready web app for Islamic Relief USA that replaces messy spreadsheets with a centralized platform for:
+- Event management with logistics tracking
+- Donor intelligence with AI-driven outreach recommendations
+- FRF (Fund Receipt Form) reconciliation (auto-reconciliation against revenue entries)
+- Attendee tracking and segmentation
+- Smart dashboard alerts
+- Financial reporting and analytics
 
-## Stack
+## Architecture
 
-- **Monorepo tool**: pnpm workspaces
-- **Node.js version**: 24
-- **Package manager**: pnpm
-- **TypeScript version**: 5.9
-- **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+**Monorepo** (pnpm workspaces):
+- `artifacts/irusa-dashboard` — React + Vite frontend (port from `PORT` env, preview path `/`)
+- `artifacts/api-server` — Express API server (port 8080, preview path `/api`)
+- `lib/db` — Drizzle ORM schema + migrations (PostgreSQL)
+- `lib/api-spec` — OpenAPI spec + Orval codegen config
+- `lib/api-zod` — Auto-generated Zod validators from OpenAPI spec
+- `lib/api-client-react` — Auto-generated TanStack Query hooks
 
-## Key Commands
+## Database Schema (9 tables)
 
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- `pnpm --filter @workspace/api-server run dev` — run API server locally
+| Table | Purpose |
+|-------|---------|
+| `events` | Core event records |
+| `logistics_tasks` | Per-event task tracking |
+| `revenue_entries` | Payment entries by type |
+| `frf_records` | Fund Receipt Forms (auto-reconciled) |
+| `allocations` | How revenue is allocated by cause |
+| `attendees` | Event attendance + giving data |
+| `donors` | Donor master records (auto-categorized) |
+| `donations` | Individual donation records |
+| `follow_up_tasks` | Post-event outreach tasks |
 
-See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+## Key Intelligence Features
+
+- **Auto FRF Reconciliation**: When FRF is submitted, it's automatically compared to revenue entries. Status becomes `matched`, `mismatch`, or `pending`.
+- **Auto Donor Categorization**: When donations are added/updated, donor category is computed: `one-time`, `seasonal`, `recurring`, `major` (>=$5k), `lapsed` (>1yr)
+- **Smart Dashboard Alerts**: Surfaces missing FRFs, attendance gaps, FRF mismatches, lapsed donors, major donor outreach gaps, unusual amounts
+- **AI Outreach Recommendations**: Per-donor recommendations based on personality type (Altruist/Investor/Repayer), giving history, top causes, recency
+
+## Frontend Pages
+
+- `/` — Dashboard (KPIs, alerts, top events, donor segments)
+- `/events` — Events list (searchable/filterable)
+- `/events/new` — New event form
+- `/events/:id` — Event detail (tabs: Overview, Logistics, Revenue, FRF, Allocations, Attendees, Follow-Ups)
+- `/donors` — Donors list (searchable, category/personality badges)
+- `/donors/new` — New donor form
+- `/donors/:id` — Donor profile (intelligence scores, top causes, AI recommendations)
+- `/reports` — Analytics (Revenue by event, conversion rates, cause breakdown)
+
+## Tech Stack
+
+- **Frontend**: React 19, Vite, Wouter (routing), TanStack Query, Recharts, Tailwind CSS
+- **Backend**: Express 5, TypeScript, Pino logging
+- **Database**: PostgreSQL via Drizzle ORM
+- **Codegen**: Orval (OpenAPI → Zod + TanStack Query)
+- **Validation**: Zod v4
+
+## Sample Data
+
+Seeded with 10 realistic events, 10 donors, 16 donations, 18 revenue entries, 4 FRF records, 10 allocations, 15 attendees, 9 logistics tasks, 8 follow-up tasks.
+
+## Running Locally
+
+Both workflows start automatically:
+1. `artifacts/api-server: API Server` — builds and starts Express on PORT 8080
+2. `artifacts/irusa-dashboard: web` — starts Vite dev server
+
+## Environment Variables
+
+- `DATABASE_URL` — PostgreSQL connection string (provisioned by Replit)
+- `SESSION_SECRET` — Session secret (stored in Replit secrets)
+- `PORT` — Assigned by Replit per artifact

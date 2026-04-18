@@ -1,0 +1,189 @@
+import { useParams } from "wouter";
+import { useGetDonorProfile, getGetDonorProfileQueryKey } from "@workspace/api-client-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Mail, Phone, MapPin, Calendar, AlertTriangle, TrendingUp, Sparkles } from "lucide-react";
+
+export default function DonorProfile() {
+  const { id } = useParams<{ id: string }>();
+  const donorId = parseInt(id || "0", 10);
+
+  const { data: profile, isLoading } = useGetDonorProfile(donorId, { query: { enabled: !!donorId, queryKey: getGetDonorProfileQueryKey(donorId) } });
+
+  if (isLoading) {
+    return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading donor profile...</div>;
+  }
+
+  if (!profile) {
+    return <div className="p-8 text-center text-destructive">Donor not found</div>;
+  }
+
+  const { donor, recommendations, topCauses } = profile;
+
+  return (
+    <div className="space-y-6">
+      {/* Header Profile Card */}
+      <Card className="border-t-4 border-t-primary">
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl font-bold tracking-tight">{donor.name}</h1>
+                <Badge variant="outline" className="capitalize">{donor.donorCategory.replace("-", " ")}</Badge>
+                {donor.donorPersonalityType && <Badge variant="secondary">{donor.donorPersonalityType}</Badge>}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4 mt-4 text-sm text-muted-foreground">
+                {donor.email && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" /> {donor.email}
+                  </div>
+                )}
+                {donor.phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4" /> {donor.phone}
+                  </div>
+                )}
+                {donor.location && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" /> {donor.location}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-2 min-w-[200px] bg-muted/50 p-4 rounded-lg">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Total Giving</span>
+                <span className="text-lg font-bold text-primary">${donor.totalDonated.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Avg Gift</span>
+                <span className="text-sm font-medium">${Math.round(donor.averageDonation).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Donations</span>
+                <span className="text-sm font-medium">{donor.donationCount}</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2 space-y-6">
+          {/* AI Recommendations */}
+          {recommendations && recommendations.length > 0 && (
+            <Card className="border-primary/20 shadow-sm bg-primary/5 dark:bg-primary/10">
+              <CardHeader className="pb-3 flex flex-row items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <CardTitle>Smart Outreach Recommendations</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {recommendations.map(rec => (
+                  <div key={rec.id} className="bg-background rounded-md p-4 border shadow-sm">
+                    <div className="flex items-start justify-between gap-4 mb-2">
+                      <div className="font-semibold text-primary">{rec.action}</div>
+                      <Badge variant={rec.urgency === "high" ? "destructive" : "secondary"}>
+                        {rec.urgency} urgency
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">{rec.reason}</p>
+                    {rec.suggestedMessage && (
+                      <div className="mt-3 p-3 bg-muted rounded-md text-sm italic border-l-2 border-primary">
+                        "{rec.suggestedMessage}"
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Giving Timeline */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Giving History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {profile.donations.length > 0 ? (
+                <div className="space-y-4">
+                  {profile.donations.map(donation => (
+                    <div key={donation.id} className="flex justify-between items-center p-3 hover:bg-muted/50 rounded-lg transition-colors">
+                      <div>
+                        <div className="font-medium">${donation.amount.toLocaleString()}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(donation.date).toLocaleDateString()} • {donation.cause || 'General Fund'}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="capitalize">{donation.donationType}</Badge>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No donation history available.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Top Causes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {topCauses.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {topCauses.map(cause => (
+                    <Badge key={cause} variant="secondary">{cause}</Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Not enough data.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Intelligence Profile</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Giving Frequency</span>
+                  <span className="font-medium">{profile.givingFrequencyScore}/100</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div className="bg-primary h-2 rounded-full" style={{width: `${profile.givingFrequencyScore}%`}}></div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Engagement Risk</span>
+                  <span className={`font-medium ${profile.engagementRiskScore > 70 ? 'text-destructive' : ''}`}>{profile.engagementRiskScore}/100</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div className={`h-2 rounded-full ${profile.engagementRiskScore > 70 ? 'bg-destructive' : 'bg-amber-500'}`} style={{width: `${profile.engagementRiskScore}%`}}></div>
+                </div>
+              </div>
+              
+              <div className="pt-4 border-t space-y-2">
+                {profile.isRamadanGiver && (
+                  <div className="flex items-center gap-2 text-sm text-primary">
+                    <Calendar className="h-4 w-4" /> Strong Ramadan Giver
+                  </div>
+                )}
+                {profile.isEmergencyResponder && (
+                  <div className="flex items-center gap-2 text-sm text-orange-600">
+                    <AlertTriangle className="h-4 w-4" /> Emergency Responder
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}

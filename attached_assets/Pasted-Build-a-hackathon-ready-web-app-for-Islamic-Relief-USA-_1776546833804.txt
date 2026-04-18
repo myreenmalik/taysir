@@ -1,0 +1,550 @@
+Build a hackathon-ready web app for Islamic Relief USA called “Smart Event & Donor Intelligence Dashboard.”
+
+Project goal:
+Create a centralized platform to replace messy, high-risk spreadsheets currently used to manage seasonal events, logistics, attendance, donations, FRFs (Fund Receipt Forms), and follow-up workflows. The app should also make it easier for staff to understand donor history, connect event participation with giving behavior, and generate intelligent next-step recommendations for outreach and follow-up.
+
+Main problem to solve:
+Islamic Relief USA currently manages events, donor engagement, and fund receipts through disconnected spreadsheets and manual processes. Staff need one place to:
+- manage events and logistics
+- track attendance and donations
+- reconcile FRFs
+- understand donor history
+- connect event participation to future giving
+- automate smarter follow-ups
+- reduce human error and missed opportunities
+
+Right now, donor outreach is often too general, event follow-up is manual, and staff do not have a clear system to understand:
+- which attendees become donors
+- which donors attend events
+- which event types create repeat donors
+- which donors need updates vs donation asks vs volunteer invites
+- what the best next action is for each donor or attendee
+
+Core users:
+- Fundraising staff
+- Event coordinators
+- Finance/admin staff
+- Donor engagement/marketing staff
+- Leadership reviewing event and donor performance
+
+What the app should do:
+Build a full-stack web app that combines:
+- event operations tracking
+- donation and FRF reconciliation
+- attendance and engagement tracking
+- donor intelligence and history
+- attendee-to-donor conversion analysis
+- AI-driven next-step recommendations
+- centralized reporting and dashboards
+
+Core features:
+
+1. Event management
+Allow staff to create and manage events with:
+- event name
+- date
+- location
+- masjid/partner organization
+- event type
+- campaign/program
+- organizer/owner
+- status: planned, upcoming, completed, reconciled, closed
+- notes
+
+2. Event logistics tracking
+Replace spreadsheet-based operational tracking with structured logistics fields and checklists.
+Include:
+- venue details
+- assigned staff/volunteers
+- materials/resources needed
+- catering/setup/AV needs
+- deadlines
+- logistics checklist items
+- risk notes
+- completion status for each task
+
+Examples of checklist items:
+- venue confirmed
+- speaker confirmed
+- volunteer assigned
+- donation materials ready
+- follow-up list prepared
+- FRF submitted
+
+3. Revenue tracking
+Track all money raised for each event.
+Allow multiple revenue entries by payment type:
+- cash
+- check
+- mailed check
+- online donation
+- mailed receipt
+- other
+
+For each entry, store:
+- amount
+- quantity/count
+- received date
+- notes
+- entered by
+
+Auto-calculate:
+- subtotal by payment type
+- total revenue per event
+
+4. FRF (Fund Receipt Form) reconciliation
+Create FRF records for each completed event.
+Each FRF should include:
+- event linkage
+- total amounts by payment type
+- total funds received
+- submitted by
+- submitted date
+- reconciliation status
+
+The system should:
+- compare FRF totals against recorded event revenue
+- flag mismatches visually
+- show reconciliation status: pending, matched, mismatch, flagged
+- prevent completion if required fields are missing
+
+5. Fund allocation tracking
+Track where the money goes after the event.
+Allow allocation categories such as:
+- emergency relief
+- food aid
+- orphan support
+- zakat
+- sadaqah
+- general fund
+- operations
+- other
+
+Auto-calculate:
+- total allocated
+- remaining balance
+- mismatch between received vs allocated
+
+6. Attendance and engagement tracking
+Track:
+- estimated attendees
+- actual attendees
+- attendee list
+- donor attendees
+- volunteer interest
+- first-time vs repeat attendees
+
+For each attendee, optionally store:
+- name
+- email
+- phone
+- donation made at event
+- donation amount
+- engagement level
+- notes
+
+7. Attendee segmentation
+After an event, automatically segment attendees into useful groups such as:
+- attended but did not donate
+- attended and donated
+- repeat attendee
+- first-time attendee
+- volunteer-interested
+- high-value donor attendee
+- no-show RSVP
+
+Display these segments on the event page and use them for follow-up recommendations.
+
+8. Donor intelligence dashboard
+This is a major feature.
+Create a donor intelligence layer that helps staff understand donor history and behavior, not just event attendance.
+
+For each donor, track and display:
+- total donated
+- average donation
+- donation frequency
+- first donation date
+- last donation date
+- causes/projects supported
+- campaign history
+- event attendance history
+- whether they donate during Ramadan
+- whether they respond to emergency campaigns
+- whether they are recurring, one-time, seasonal, major, or lapsed
+- inferred donor personality type
+- recommended communication frequency
+- recommended campaign themes
+- recommended next action
+
+The donor intelligence dashboard should help answer:
+- What has this donor supported before?
+- Which events did they attend?
+- Did event attendance lead to giving?
+- What causes do they care about most?
+- Are they a frequent donor or a low-frequency donor?
+- What kind of outreach should happen next?
+
+9. Connect event participation with giving behavior
+This is one of the smartest parts of the app.
+Link event attendance to donation history so staff can understand:
+- which attendees donated at the event
+- which attendees donated after the event
+- which events lead to the most donor conversions
+- which donors attend often but do not give
+- which event types drive repeat giving
+- which causes and events influence donor behavior
+
+Show metrics like:
+- attendee-to-donor conversion rate
+- donation rate by event
+- repeat donor rate after event attendance
+- event impact on future giving
+- top-performing event types for donor conversion
+
+10. Donor profile and history pages
+Each donor should have a profile page showing:
+- personal/contact info
+- donation timeline
+- events attended
+- total giving summary
+- favorite causes/projects
+- campaign history
+- donor category
+- inferred donor personality type
+- communication recommendations
+- next best action
+- suggested follow-up messaging
+- history log of staff interactions
+
+11. AI-driven next-step recommendations
+Build a recommendation engine that suggests what staff should do next for each donor or attendee.
+These can be rule-based with optional AI-style presentation.
+
+Examples:
+- send thank-you email
+- send impact update about a supported cause
+- invite to volunteer opportunity
+- send donation ask for a related campaign
+- reduce email frequency
+- re-engage with a lapsed donor
+- prioritize outside Ramadan if they do not usually give then
+- assign to staff for personal follow-up
+- invite to a similar upcoming event
+- send major-donor stewardship outreach
+
+Each recommendation should include:
+- recommended action
+- why it was recommended
+- urgency/priority
+- suggested message tone
+- suggested subject line or message draft
+
+12. Personalized donor behavior logic
+Incorporate donor personalization logic such as:
+- if someone does not usually donate during Ramadan, do not heavily target them with Ramadan asks
+- if someone donated to a Sudan hospital project, send updates and future asks related to Sudan health work
+- if someone donated once to Palestine, send Palestine-related donation and volunteer opportunities
+- if someone donates often, they can receive more frequent outreach
+- if someone only donates once a year, avoid over-emailing them
+- if someone is an altruist, use emotionally meaningful impact language
+- if someone is an investor, use results, efficiency, and measurable impact language
+- if someone is a repayer, use gratitude-based and loyalty-based messaging
+
+13. Donor personality and segmentation
+Classify donors into simple segments such as:
+- Altruist
+- Investor
+- Repayer
+
+Also classify donors as:
+- one-time donor
+- recurring donor
+- seasonal donor
+- major donor
+- lapsed donor
+- emergency responder donor
+
+Use simple rule-based logic to infer these from giving behavior and tags.
+
+14. Follow-up workflow engine
+After an event, the system should generate follow-up actions such as:
+- send thank-you email to attendees
+- send donation ask to engaged non-donors
+- send impact update to donors
+- send volunteer opportunity to volunteer-interested attendees
+- remind staff to submit FRF
+- remind staff to finish reconciliation
+- remind staff to log outcomes and close logistics tasks
+
+Also generate donor-specific next steps from the donor intelligence system.
+
+For each event or donor, show tasks with statuses:
+- not started
+- in progress
+- completed
+
+15. Dashboard
+Create a centralized dashboard showing:
+- total events
+- upcoming events
+- completed events
+- total money raised
+- total attendees
+- total unreconciled FRFs
+- events missing attendance data
+- events with incomplete logistics
+- events needing follow-up
+- highest-performing events
+- donor conversion by event
+- total donors
+- donor segments by type
+- top causes by donor interest
+- donors at risk of disengagement
+- outreach opportunity summaries
+
+16. Reporting and visualization
+Create charts and reports showing:
+- money raised by event
+- revenue by payment type
+- allocation by fund destination
+- attendance by event
+- donor conversion by event
+- FRF reconciliation status
+- follow-up completion status
+- donations by donor segment
+- events attended vs donations made
+- donor interests by cause/project
+- lapsed donor opportunities
+- top event types for long-term donor value
+
+Allow filtering by:
+- date
+- location
+- masjid/partner
+- campaign
+- event status
+- reconciliation status
+- donor type
+- cause interest
+- giving frequency
+
+Allow export as CSV.
+
+17. Alerts and error prevention
+Add smart alerts such as:
+- FRF missing for completed event
+- attendance not logged
+- received total does not match allocated total
+- FRF total does not match recorded revenue
+- follow-up tasks incomplete
+- missing logistics checklist items
+- duplicate-looking donation entry
+- unusually large amount entered
+- donor attended multiple events but has no follow-up logged
+- high-value donor has not received recent outreach
+- lapsed donor may need re-engagement
+
+Suggested data model:
+
+Event:
+- id
+- name
+- date
+- location
+- masjid_partner
+- event_type
+- campaign
+- organizer
+- status
+- estimated_attendees
+- actual_attendees
+- notes
+
+LogisticsTask:
+- id
+- event_id
+- task_name
+- assigned_to
+- due_date
+- status
+- notes
+
+RevenueEntry:
+- id
+- event_id
+- payment_type
+- amount
+- quantity
+- received_date
+- notes
+- entered_by
+
+FRFRecord:
+- id
+- event_id
+- cash_amount
+- check_amount
+- mailed_check_amount
+- mailed_receipt_amount
+- online_amount
+- other_amount
+- total_amount
+- submitted_by
+- submitted_date
+- reconciliation_status
+
+Allocation:
+- id
+- event_id
+- category
+- amount
+- notes
+
+Attendee:
+- id
+- event_id
+- name
+- email
+- phone
+- attended
+- donated
+- donation_amount
+- volunteer_interest
+- attendee_type
+- engagement_level
+- notes
+
+Donor:
+- id
+- name
+- email
+- phone
+- location
+- total_donated
+- average_donation
+- donation_count
+- first_donation_date
+- last_donation_date
+- donor_category
+- donor_personality_type
+- preferred_contact_frequency
+- notes
+
+Donation:
+- id
+- donor_id
+- event_id
+- date
+- amount
+- cause
+- campaign
+- season
+- donation_type
+
+DonorInsight:
+- id
+- donor_id
+- top_causes
+- ramadan_giver
+- emergency_campaign_responder
+- giving_frequency_score
+- recency_score
+- engagement_risk_score
+- recommended_contact_frequency
+- recommended_tone
+- recommended_next_action
+- calculated_at
+
+FollowUpTask:
+- id
+- event_id
+- attendee_id
+- donor_id
+- task_type
+- recommended_action
+- status
+- due_date
+- notes
+
+ActivityLog:
+- id
+- donor_id
+- event_id
+- action
+- timestamp
+- user_name
+
+Suggested recommendation logic:
+Use rule-based logic with an AI-style recommendation interface to determine:
+- best outreach timing
+- best outreach frequency
+- best campaign theme
+- best tone
+- best next step
+
+Examples:
+- Frequent donors = more asks and more updates
+- Infrequent donors = fewer asks, more careful timing
+- Cause-specific donors = cause-specific updates and asks
+- Ramadan non-donors = deprioritize Ramadan-only appeals
+- Altruists = emotional impact language
+- Investors = measurable outcomes and efficiency
+- Repayers = gratitude and community language
+- Attended event but did not donate = send soft follow-up ask
+- Attended and donated = send thank-you + project update
+- Repeat attendee = invite to deeper engagement or volunteer opportunity
+- Lapsed donor = send re-engagement message with relevant cause history
+
+Important UI pages:
+- Dashboard
+- Events list page
+- Create/edit event form
+- Event detail page
+- Logistics checklist page
+- FRF reconciliation page
+- Attendee segmentation view
+- Donor intelligence dashboard
+- Donor list page
+- Donor detail page
+- Recommendations / next-actions page
+- Follow-up workflow page
+- Reports/export page
+
+Technical requirements:
+- Use a Replit-friendly stack
+- Preferred: Next.js + SQLite
+- If simpler, use Flask + SQLite
+- Seed the app with realistic demo data for multiple events and donors
+- Use a polished nonprofit/professional UI
+- Responsive design
+- Mock login is okay for demo purposes
+
+Nice-to-have features if time allows:
+- Email preview templates for follow-ups
+- Event score based on attendance, revenue, and follow-up completion
+- Masjid/partner performance insights
+- Upload/import old spreadsheet CSVs
+- AI-generated outreach text suggestions
+- “Next best action” card on each donor profile
+
+Hackathon priority:
+Prioritize a strong MVP that clearly demonstrates:
+- centralized event tracking
+- logistics checklist management
+- donation and FRF reconciliation
+- attendance and attendee segmentation
+- donor history and intelligence
+- event-to-donor conversion insights
+- AI-driven next-step recommendations
+- dashboard alerts and reporting
+
+Important product goal:
+The app should clearly show how Islamic Relief USA can replace risky spreadsheets with a centralized event and donor intelligence platform that improves visibility, reduces manual error, connects logistics with fundraising data, helps staff understand donor history, and enables more intelligent follow-up after every event.
+
+Please generate:
+- full project structure
+- frontend and backend code
+- database schema
+- seed data
+- README with setup instructions
+- clear comments explaining reconciliation, segmentation, donor intelligence, and recommendation logic

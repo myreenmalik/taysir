@@ -1,22 +1,43 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: IRUSA Smart Event & Donor Intelligence Dashboard API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: events
+    description: Event management
+  - name: logistics
+    description: Event logistics tasks
+  - name: revenue
+    description: Revenue entries
+  - name: frf
+    description: Fund Receipt Forms
+  - name: allocations
+    description: Fund allocations
+  - name: attendees
+    description: Event attendees
+  - name: donors
+    description: Donor management
+  - name: donations
+    description: Donation records
+  - name: followup
+    description: Follow-up tasks
+  - name: dashboard
+    description: Dashboard summaries
+  - name: reports
+    description: Reports and analytics
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +45,978 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ==================== EVENTS ====================
+  /events:
+    get:
+      operationId: listEvents
+      tags: [events]
+      summary: List all events
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: eventType
+          schema:
+            type: string
+        - in: query
+          name: campaign
+          schema:
+            type: string
+        - in: query
+          name: location
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+    post:
+      operationId: createEvent
+      tags: [events]
+      summary: Create a new event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEventBody"
+      responses:
+        "201":
+          description: Created event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+
+  /events/{id}:
+    get:
+      operationId: getEvent
+      tags: [events]
+      summary: Get event by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateEvent
+      tags: [events]
+      summary: Update event
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateEventBody"
+      responses:
+        "200":
+          description: Updated event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+    delete:
+      operationId: deleteEvent
+      tags: [events]
+      summary: Delete event
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /events/{id}/summary:
+    get:
+      operationId: getEventSummary
+      tags: [events]
+      summary: Get full event summary with revenue, logistics, and attendance stats
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Event summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventSummary"
+
+  # ==================== LOGISTICS ====================
+  /events/{eventId}/logistics:
+    get:
+      operationId: listLogisticsTasks
+      tags: [logistics]
+      summary: List logistics tasks for an event
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of logistics tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LogisticsTask"
+    post:
+      operationId: createLogisticsTask
+      tags: [logistics]
+      summary: Create a logistics task
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLogisticsTaskBody"
+      responses:
+        "201":
+          description: Created task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogisticsTask"
+
+  /logistics/{id}:
+    patch:
+      operationId: updateLogisticsTask
+      tags: [logistics]
+      summary: Update a logistics task
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLogisticsTaskBody"
+      responses:
+        "200":
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogisticsTask"
+    delete:
+      operationId: deleteLogisticsTask
+      tags: [logistics]
+      summary: Delete a logistics task
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ==================== REVENUE ====================
+  /events/{eventId}/revenue:
+    get:
+      operationId: listRevenueEntries
+      tags: [revenue]
+      summary: List revenue entries for an event
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Revenue entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RevenueEntry"
+    post:
+      operationId: createRevenueEntry
+      tags: [revenue]
+      summary: Create revenue entry
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRevenueEntryBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueEntry"
+
+  /revenue/{id}:
+    patch:
+      operationId: updateRevenueEntry
+      tags: [revenue]
+      summary: Update revenue entry
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRevenueEntryBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueEntry"
+    delete:
+      operationId: deleteRevenueEntry
+      tags: [revenue]
+      summary: Delete revenue entry
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ==================== FRF ====================
+  /events/{eventId}/frf:
+    get:
+      operationId: getFRFRecord
+      tags: [frf]
+      summary: Get FRF record for an event
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: FRF record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FRFRecord"
+        "404":
+          description: Not found
+    post:
+      operationId: createFRFRecord
+      tags: [frf]
+      summary: Create or update FRF record
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFRFBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FRFRecord"
+
+  /frf/{id}:
+    patch:
+      operationId: updateFRFRecord
+      tags: [frf]
+      summary: Update FRF record
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFRFBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FRFRecord"
+
+  # ==================== ALLOCATIONS ====================
+  /events/{eventId}/allocations:
+    get:
+      operationId: listAllocations
+      tags: [allocations]
+      summary: List fund allocations for an event
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Allocations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Allocation"
+    post:
+      operationId: createAllocation
+      tags: [allocations]
+      summary: Create allocation
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAllocationBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Allocation"
+
+  /allocations/{id}:
+    patch:
+      operationId: updateAllocation
+      tags: [allocations]
+      summary: Update allocation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAllocationBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Allocation"
+    delete:
+      operationId: deleteAllocation
+      tags: [allocations]
+      summary: Delete allocation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ==================== ATTENDEES ====================
+  /events/{eventId}/attendees:
+    get:
+      operationId: listAttendees
+      tags: [attendees]
+      summary: List attendees for an event
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Attendees
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Attendee"
+    post:
+      operationId: createAttendee
+      tags: [attendees]
+      summary: Add attendee to event
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAttendeeBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attendee"
+
+  /attendees/{id}:
+    patch:
+      operationId: updateAttendee
+      tags: [attendees]
+      summary: Update attendee
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAttendeeBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attendee"
+    delete:
+      operationId: deleteAttendee
+      tags: [attendees]
+      summary: Remove attendee
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /events/{eventId}/attendee-segments:
+    get:
+      operationId: getAttendeeSegments
+      tags: [attendees]
+      summary: Get attendee segmentation for an event
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Segmented attendees
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendeeSegments"
+
+  # ==================== DONORS ====================
+  /donors:
+    get:
+      operationId: listDonors
+      tags: [donors]
+      summary: List all donors
+      parameters:
+        - in: query
+          name: donorCategory
+          schema:
+            type: string
+        - in: query
+          name: personalityType
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Donors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Donor"
+    post:
+      operationId: createDonor
+      tags: [donors]
+      summary: Create donor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDonorBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Donor"
+
+  /donors/{id}:
+    get:
+      operationId: getDonor
+      tags: [donors]
+      summary: Get donor by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Donor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Donor"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateDonor
+      tags: [donors]
+      summary: Update donor
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDonorBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Donor"
+
+  /donors/{id}/profile:
+    get:
+      operationId: getDonorProfile
+      tags: [donors]
+      summary: Get full donor profile with insights, donations, and events attended
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Full donor profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DonorProfile"
+
+  /donors/{id}/recommendations:
+    get:
+      operationId: getDonorRecommendations
+      tags: [donors]
+      summary: Get AI-driven next-step recommendations for a donor
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Recommendation"
+
+  # ==================== DONATIONS ====================
+  /donations:
+    get:
+      operationId: listDonations
+      tags: [donations]
+      summary: List all donations
+      parameters:
+        - in: query
+          name: donorId
+          schema:
+            type: integer
+        - in: query
+          name: eventId
+          schema:
+            type: integer
+        - in: query
+          name: cause
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Donations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Donation"
+    post:
+      operationId: createDonation
+      tags: [donations]
+      summary: Record a donation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDonationBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Donation"
+
+  /donations/{id}:
+    patch:
+      operationId: updateDonation
+      tags: [donations]
+      summary: Update donation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDonationBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Donation"
+    delete:
+      operationId: deleteDonation
+      tags: [donations]
+      summary: Delete donation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ==================== FOLLOW-UP TASKS ====================
+  /follow-up-tasks:
+    get:
+      operationId: listFollowUpTasks
+      tags: [followup]
+      summary: List follow-up tasks
+      parameters:
+        - in: query
+          name: eventId
+          schema:
+            type: integer
+        - in: query
+          name: donorId
+          schema:
+            type: integer
+        - in: query
+          name: status
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Follow-up tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FollowUpTask"
+    post:
+      operationId: createFollowUpTask
+      tags: [followup]
+      summary: Create follow-up task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFollowUpTaskBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowUpTask"
+
+  /follow-up-tasks/{id}:
+    patch:
+      operationId: updateFollowUpTask
+      tags: [followup]
+      summary: Update follow-up task status
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFollowUpTaskBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowUpTask"
+
+  /events/{eventId}/generate-followups:
+    post:
+      operationId: generateEventFollowUps
+      tags: [followup]
+      summary: Auto-generate follow-up tasks for a completed event
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Generated tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FollowUpTask"
+
+  # ==================== DASHBOARD ====================
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get overall dashboard metrics
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/alerts:
+    get:
+      operationId: getDashboardAlerts
+      tags: [dashboard]
+      summary: Get smart alerts and warnings
+      responses:
+        "200":
+          description: Alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alert"
+
+  /dashboard/donor-segments:
+    get:
+      operationId: getDonorSegments
+      tags: [dashboard]
+      summary: Get donor segment counts and summaries
+      responses:
+        "200":
+          description: Donor segments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DonorSegmentSummary"
+
+  /dashboard/top-events:
+    get:
+      operationId: getTopEvents
+      tags: [dashboard]
+      summary: Get top performing events by revenue and donor conversion
+      responses:
+        "200":
+          description: Top events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EventPerformance"
+
+  # ==================== REPORTS ====================
+  /reports/revenue-by-event:
+    get:
+      operationId: getRevenueByEvent
+      tags: [reports]
+      summary: Revenue breakdown by event
+      responses:
+        "200":
+          description: Revenue by event
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RevenueByEvent"
+
+  /reports/donor-conversion:
+    get:
+      operationId: getDonorConversionReport
+      tags: [reports]
+      summary: Attendee-to-donor conversion stats by event
+      responses:
+        "200":
+          description: Conversion report
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DonorConversionReport"
+
+  /reports/frf-status:
+    get:
+      operationId: getFRFStatusReport
+      tags: [reports]
+      summary: FRF reconciliation status overview
+      responses:
+        "200":
+          description: FRF status report
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FRFStatusReport"
+
+  /reports/cause-interest:
+    get:
+      operationId: getCauseInterestReport
+      tags: [reports]
+      summary: Donations and donor interest by cause
+      responses:
+        "200":
+          description: Cause interest
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CauseInterest"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +1027,1073 @@ components:
       required:
         - status
 
+    # ==================== EVENT ====================
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        date:
+          type: string
+        location:
+          type: string
+        masjidPartner:
+          type: ["string", "null"]
+        eventType:
+          type: string
+        campaign:
+          type: ["string", "null"]
+        organizer:
+          type: ["string", "null"]
+        status:
+          type: string
+        estimatedAttendees:
+          type: ["integer", "null"]
+        actualAttendees:
+          type: ["integer", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - name
+        - date
+        - location
+        - eventType
+        - status
+        - createdAt
+        - updatedAt
+
+    CreateEventBody:
+      type: object
+      properties:
+        name:
+          type: string
+        date:
+          type: string
+        location:
+          type: string
+        masjidPartner:
+          type: ["string", "null"]
+        eventType:
+          type: string
+        campaign:
+          type: ["string", "null"]
+        organizer:
+          type: ["string", "null"]
+        status:
+          type: string
+          default: "planned"
+        estimatedAttendees:
+          type: ["integer", "null"]
+        actualAttendees:
+          type: ["integer", "null"]
+        notes:
+          type: ["string", "null"]
+      required:
+        - name
+        - date
+        - location
+        - eventType
+
+    UpdateEventBody:
+      type: object
+      properties:
+        name:
+          type: string
+        date:
+          type: string
+        location:
+          type: string
+        masjidPartner:
+          type: ["string", "null"]
+        eventType:
+          type: string
+        campaign:
+          type: ["string", "null"]
+        organizer:
+          type: ["string", "null"]
+        status:
+          type: string
+        estimatedAttendees:
+          type: ["integer", "null"]
+        actualAttendees:
+          type: ["integer", "null"]
+        notes:
+          type: ["string", "null"]
+
+    EventSummary:
+      type: object
+      properties:
+        event:
+          $ref: "#/components/schemas/Event"
+        totalRevenue:
+          type: number
+        revenueByPaymentType:
+          type: object
+          additionalProperties:
+            type: number
+        totalAllocated:
+          type: number
+        allocationBalance:
+          type: number
+        logisticsCompletion:
+          type: number
+        attendeeCount:
+          type: integer
+        donorAttendeeCount:
+          type: integer
+        conversionRate:
+          type: number
+        frfStatus:
+          type: ["string", "null"]
+        openFollowUps:
+          type: integer
+      required:
+        - event
+        - totalRevenue
+        - revenueByPaymentType
+        - totalAllocated
+        - allocationBalance
+        - logisticsCompletion
+        - attendeeCount
+        - donorAttendeeCount
+        - conversionRate
+        - openFollowUps
+
+    # ==================== LOGISTICS ====================
+    LogisticsTask:
+      type: object
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: integer
+        taskName:
+          type: string
+        assignedTo:
+          type: ["string", "null"]
+        dueDate:
+          type: ["string", "null"]
+        status:
+          type: string
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - eventId
+        - taskName
+        - status
+        - createdAt
+
+    CreateLogisticsTaskBody:
+      type: object
+      properties:
+        taskName:
+          type: string
+        assignedTo:
+          type: ["string", "null"]
+        dueDate:
+          type: ["string", "null"]
+        status:
+          type: string
+          default: "pending"
+        notes:
+          type: ["string", "null"]
+      required:
+        - taskName
+
+    UpdateLogisticsTaskBody:
+      type: object
+      properties:
+        taskName:
+          type: string
+        assignedTo:
+          type: ["string", "null"]
+        dueDate:
+          type: ["string", "null"]
+        status:
+          type: string
+        notes:
+          type: ["string", "null"]
+
+    # ==================== REVENUE ====================
+    RevenueEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: integer
+        paymentType:
+          type: string
+        amount:
+          type: number
+        quantity:
+          type: ["integer", "null"]
+        receivedDate:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        enteredBy:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - eventId
+        - paymentType
+        - amount
+        - createdAt
+
+    CreateRevenueEntryBody:
+      type: object
+      properties:
+        paymentType:
+          type: string
+        amount:
+          type: number
+        quantity:
+          type: ["integer", "null"]
+        receivedDate:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        enteredBy:
+          type: ["string", "null"]
+      required:
+        - paymentType
+        - amount
+
+    UpdateRevenueEntryBody:
+      type: object
+      properties:
+        paymentType:
+          type: string
+        amount:
+          type: number
+        quantity:
+          type: ["integer", "null"]
+        receivedDate:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        enteredBy:
+          type: ["string", "null"]
+
+    # ==================== FRF ====================
+    FRFRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: integer
+        cashAmount:
+          type: number
+        checkAmount:
+          type: number
+        mailedCheckAmount:
+          type: number
+        mailedReceiptAmount:
+          type: number
+        onlineAmount:
+          type: number
+        otherAmount:
+          type: number
+        totalAmount:
+          type: number
+        submittedBy:
+          type: ["string", "null"]
+        submittedDate:
+          type: ["string", "null"]
+        reconciliationStatus:
+          type: string
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - eventId
+        - cashAmount
+        - checkAmount
+        - mailedCheckAmount
+        - mailedReceiptAmount
+        - onlineAmount
+        - otherAmount
+        - totalAmount
+        - reconciliationStatus
+        - createdAt
+
+    CreateFRFBody:
+      type: object
+      properties:
+        cashAmount:
+          type: number
+          default: 0
+        checkAmount:
+          type: number
+          default: 0
+        mailedCheckAmount:
+          type: number
+          default: 0
+        mailedReceiptAmount:
+          type: number
+          default: 0
+        onlineAmount:
+          type: number
+          default: 0
+        otherAmount:
+          type: number
+          default: 0
+        submittedBy:
+          type: ["string", "null"]
+        submittedDate:
+          type: ["string", "null"]
+        reconciliationStatus:
+          type: string
+          default: "pending"
+        notes:
+          type: ["string", "null"]
+
+    UpdateFRFBody:
+      type: object
+      properties:
+        cashAmount:
+          type: number
+        checkAmount:
+          type: number
+        mailedCheckAmount:
+          type: number
+        mailedReceiptAmount:
+          type: number
+        onlineAmount:
+          type: number
+        otherAmount:
+          type: number
+        submittedBy:
+          type: ["string", "null"]
+        submittedDate:
+          type: ["string", "null"]
+        reconciliationStatus:
+          type: string
+        notes:
+          type: ["string", "null"]
+
+    # ==================== ALLOCATION ====================
+    Allocation:
+      type: object
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: integer
+        category:
+          type: string
+        amount:
+          type: number
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - eventId
+        - category
+        - amount
+        - createdAt
+
+    CreateAllocationBody:
+      type: object
+      properties:
+        category:
+          type: string
+        amount:
+          type: number
+        notes:
+          type: ["string", "null"]
+      required:
+        - category
+        - amount
+
+    UpdateAllocationBody:
+      type: object
+      properties:
+        category:
+          type: string
+        amount:
+          type: number
+        notes:
+          type: ["string", "null"]
+
+    # ==================== ATTENDEE ====================
+    Attendee:
+      type: object
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: integer
+        name:
+          type: string
+        email:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        attended:
+          type: boolean
+        donated:
+          type: boolean
+        donationAmount:
+          type: ["number", "null"]
+        volunteerInterest:
+          type: boolean
+        attendeeType:
+          type: string
+        engagementLevel:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        donorId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - eventId
+        - name
+        - attended
+        - donated
+        - volunteerInterest
+        - attendeeType
+        - createdAt
+
+    CreateAttendeeBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        attended:
+          type: boolean
+          default: true
+        donated:
+          type: boolean
+          default: false
+        donationAmount:
+          type: ["number", "null"]
+        volunteerInterest:
+          type: boolean
+          default: false
+        attendeeType:
+          type: string
+          default: "first-time"
+        engagementLevel:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        donorId:
+          type: ["integer", "null"]
+      required:
+        - name
+
+    UpdateAttendeeBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        attended:
+          type: boolean
+        donated:
+          type: boolean
+        donationAmount:
+          type: ["number", "null"]
+        volunteerInterest:
+          type: boolean
+        attendeeType:
+          type: string
+        engagementLevel:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        donorId:
+          type: ["integer", "null"]
+
+    AttendeeSegments:
+      type: object
+      properties:
+        attendedNotDonated:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attendee"
+        attendedAndDonated:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attendee"
+        firstTimeAttendees:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attendee"
+        repeatAttendees:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attendee"
+        volunteerInterested:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attendee"
+        highValueDonorAttendees:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attendee"
+      required:
+        - attendedNotDonated
+        - attendedAndDonated
+        - firstTimeAttendees
+        - repeatAttendees
+        - volunteerInterested
+        - highValueDonorAttendees
+
+    # ==================== DONOR ====================
+    Donor:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        location:
+          type: ["string", "null"]
+        totalDonated:
+          type: number
+        averageDonation:
+          type: number
+        donationCount:
+          type: integer
+        firstDonationDate:
+          type: ["string", "null"]
+        lastDonationDate:
+          type: ["string", "null"]
+        donorCategory:
+          type: string
+        donorPersonalityType:
+          type: ["string", "null"]
+        preferredContactFrequency:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - name
+        - totalDonated
+        - averageDonation
+        - donationCount
+        - donorCategory
+        - createdAt
+        - updatedAt
+
+    CreateDonorBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        location:
+          type: ["string", "null"]
+        donorCategory:
+          type: string
+          default: "one-time"
+        donorPersonalityType:
+          type: ["string", "null"]
+        preferredContactFrequency:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+      required:
+        - name
+
+    UpdateDonorBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        location:
+          type: ["string", "null"]
+        donorCategory:
+          type: string
+        donorPersonalityType:
+          type: ["string", "null"]
+        preferredContactFrequency:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    DonorProfile:
+      type: object
+      properties:
+        donor:
+          $ref: "#/components/schemas/Donor"
+        donations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Donation"
+        eventsAttended:
+          type: array
+          items:
+            $ref: "#/components/schemas/Event"
+        topCauses:
+          type: array
+          items:
+            type: string
+        isRamadanGiver:
+          type: boolean
+        isEmergencyResponder:
+          type: boolean
+        givingFrequencyScore:
+          type: number
+        recencyScore:
+          type: number
+        engagementRiskScore:
+          type: number
+        recommendations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Recommendation"
+      required:
+        - donor
+        - donations
+        - eventsAttended
+        - topCauses
+        - isRamadanGiver
+        - isEmergencyResponder
+        - givingFrequencyScore
+        - recencyScore
+        - engagementRiskScore
+        - recommendations
+
+    Recommendation:
+      type: object
+      properties:
+        id:
+          type: integer
+        action:
+          type: string
+        reason:
+          type: string
+        urgency:
+          type: string
+        tone:
+          type: string
+        suggestedSubject:
+          type: ["string", "null"]
+        suggestedMessage:
+          type: ["string", "null"]
+      required:
+        - id
+        - action
+        - reason
+        - urgency
+        - tone
+
+    # ==================== DONATION ====================
+    Donation:
+      type: object
+      properties:
+        id:
+          type: integer
+        donorId:
+          type: integer
+        eventId:
+          type: ["integer", "null"]
+        date:
+          type: string
+        amount:
+          type: number
+        cause:
+          type: ["string", "null"]
+        campaign:
+          type: ["string", "null"]
+        season:
+          type: ["string", "null"]
+        donationType:
+          type: string
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - donorId
+        - date
+        - amount
+        - donationType
+        - createdAt
+
+    CreateDonationBody:
+      type: object
+      properties:
+        donorId:
+          type: integer
+        eventId:
+          type: ["integer", "null"]
+        date:
+          type: string
+        amount:
+          type: number
+        cause:
+          type: ["string", "null"]
+        campaign:
+          type: ["string", "null"]
+        season:
+          type: ["string", "null"]
+        donationType:
+          type: string
+          default: "one-time"
+        notes:
+          type: ["string", "null"]
+      required:
+        - donorId
+        - date
+        - amount
+        - donationType
+
+    UpdateDonationBody:
+      type: object
+      properties:
+        date:
+          type: string
+        amount:
+          type: number
+        cause:
+          type: ["string", "null"]
+        campaign:
+          type: ["string", "null"]
+        season:
+          type: ["string", "null"]
+        donationType:
+          type: string
+        notes:
+          type: ["string", "null"]
+
+    # ==================== FOLLOW-UP TASK ====================
+    FollowUpTask:
+      type: object
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: ["integer", "null"]
+        attendeeId:
+          type: ["integer", "null"]
+        donorId:
+          type: ["integer", "null"]
+        taskType:
+          type: string
+        recommendedAction:
+          type: string
+        status:
+          type: string
+        dueDate:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - taskType
+        - recommendedAction
+        - status
+        - createdAt
+
+    CreateFollowUpTaskBody:
+      type: object
+      properties:
+        eventId:
+          type: ["integer", "null"]
+        attendeeId:
+          type: ["integer", "null"]
+        donorId:
+          type: ["integer", "null"]
+        taskType:
+          type: string
+        recommendedAction:
+          type: string
+        status:
+          type: string
+          default: "not-started"
+        dueDate:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+      required:
+        - taskType
+        - recommendedAction
+
+    UpdateFollowUpTaskBody:
+      type: object
+      properties:
+        taskType:
+          type: string
+        recommendedAction:
+          type: string
+        status:
+          type: string
+        dueDate:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    # ==================== DASHBOARD ====================
+    DashboardSummary:
+      type: object
+      properties:
+        totalEvents:
+          type: integer
+        upcomingEvents:
+          type: integer
+        completedEvents:
+          type: integer
+        totalRevenue:
+          type: number
+        totalAttendees:
+          type: integer
+        totalDonors:
+          type: integer
+        unreconciledFRFs:
+          type: integer
+        missingAttendanceData:
+          type: integer
+        incompleteLogistics:
+          type: integer
+        pendingFollowUps:
+          type: integer
+        totalDonations:
+          type: number
+        atRiskDonors:
+          type: integer
+      required:
+        - totalEvents
+        - upcomingEvents
+        - completedEvents
+        - totalRevenue
+        - totalAttendees
+        - totalDonors
+        - unreconciledFRFs
+        - missingAttendanceData
+        - incompleteLogistics
+        - pendingFollowUps
+        - totalDonations
+        - atRiskDonors
+
+    Alert:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        severity:
+          type: string
+        message:
+          type: string
+        eventId:
+          type: ["integer", "null"]
+        donorId:
+          type: ["integer", "null"]
+        entityName:
+          type: ["string", "null"]
+      required:
+        - id
+        - type
+        - severity
+        - message
+
+    DonorSegmentSummary:
+      type: object
+      properties:
+        oneTime:
+          type: integer
+        recurring:
+          type: integer
+        seasonal:
+          type: integer
+        major:
+          type: integer
+        lapsed:
+          type: integer
+        emergencyResponder:
+          type: integer
+        altruist:
+          type: integer
+        investor:
+          type: integer
+        repayer:
+          type: integer
+        totalDonors:
+          type: integer
+      required:
+        - oneTime
+        - recurring
+        - seasonal
+        - major
+        - lapsed
+        - emergencyResponder
+        - altruist
+        - investor
+        - repayer
+        - totalDonors
+
+    EventPerformance:
+      type: object
+      properties:
+        eventId:
+          type: integer
+        eventName:
+          type: string
+        date:
+          type: string
+        totalRevenue:
+          type: number
+        attendeeCount:
+          type: integer
+        donorConversionRate:
+          type: number
+        eventType:
+          type: string
+      required:
+        - eventId
+        - eventName
+        - date
+        - totalRevenue
+        - attendeeCount
+        - donorConversionRate
+        - eventType
+
+    # ==================== REPORTS ====================
+    RevenueByEvent:
+      type: object
+      properties:
+        eventId:
+          type: integer
+        eventName:
+          type: string
+        date:
+          type: string
+        totalRevenue:
+          type: number
+        cashAmount:
+          type: number
+        checkAmount:
+          type: number
+        onlineAmount:
+          type: number
+        otherAmount:
+          type: number
+      required:
+        - eventId
+        - eventName
+        - date
+        - totalRevenue
+        - cashAmount
+        - checkAmount
+        - onlineAmount
+        - otherAmount
+
+    DonorConversionReport:
+      type: object
+      properties:
+        eventId:
+          type: integer
+        eventName:
+          type: string
+        eventType:
+          type: string
+        totalAttendees:
+          type: integer
+        attendeesDonated:
+          type: integer
+        conversionRate:
+          type: number
+        totalRaised:
+          type: number
+      required:
+        - eventId
+        - eventName
+        - eventType
+        - totalAttendees
+        - attendeesDonated
+        - conversionRate
+        - totalRaised
+
+    FRFStatusReport:
+      type: object
+      properties:
+        eventId:
+          type: integer
+        eventName:
+          type: string
+        eventStatus:
+          type: string
+        frfStatus:
+          type: ["string", "null"]
+        revenueTotal:
+          type: number
+        frfTotal:
+          type: number
+        variance:
+          type: number
+      required:
+        - eventId
+        - eventName
+        - eventStatus
+        - revenueTotal
+        - frfTotal
+        - variance
+
+    CauseInterest:
+      type: object
+      properties:
+        cause:
+          type: string
+        totalDonated:
+          type: number
+        donationCount:
+          type: integer
+        uniqueDonors:
+          type: integer
+      required:
+        - cause
+        - totalDonated
+        - donationCount
+        - uniqueDonors
