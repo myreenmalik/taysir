@@ -1,22 +1,65 @@
 import { useListEvents, getListEventsQueryKey } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "wouter";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 
+const STATUS_OPTIONS = ["planned", "upcoming", "completed", "reconciled", "closed"] as const;
+const EVENT_TYPE_OPTIONS = ["dinner", "gala", "community", "outreach", "zakat"] as const;
+
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+const initialFilters = {
+  search: "",
+  dateFrom: "",
+  dateTo: "",
+  eventType: "all",
+  status: "all",
+  location: "",
+  attendeesMin: "",
+  attendeesMax: "",
+};
+
 export default function EventsList() {
-  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState(initialFilters);
   const { data: events, isLoading } = useListEvents({}, { query: { queryKey: getListEventsQueryKey() } });
+
+  const updateFilter = <K extends keyof typeof filters>(key: K, value: (typeof filters)[K]) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const clearFilters = () => setFilters(initialFilters);
+
+  const eventTypeOptions = useMemo(() => {
+    const set = new Set<string>(EVENT_TYPE_OPTIONS);
+    events?.forEach(e => {
+      if (e.eventType) set.add(e.eventType);
+    });
+    return Array.from(set).sort();
+  }, [events]);
+
+  const filtersActive = useMemo(
+    () => Object.entries(filters).some(([k, v]) => v !== (initialFilters as Record<string, string>)[k]),
+    [filters],
+  );
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case "planned": return "secondary";
       case "upcoming": return "default";
-      case "completed": return "default"; // green would be better
-      case "reconciled": return "outline"; // teal
+      case "completed": return "default";
+      case "reconciled": return "outline";
       case "closed": return "outline";
       default: return "outline";
     }
@@ -33,10 +76,41 @@ export default function EventsList() {
     }
   };
 
-  const filteredEvents = events?.filter(e => 
-    e.name.toLowerCase().includes(search.toLowerCase()) || 
-    e.location.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredEvents = useMemo(() => {
+    if (!events) return events;
+    const searchLower = filters.search.trim().toLowerCase();
+    const locationLower = filters.location.trim().toLowerCase();
+    const fromTime = filters.dateFrom ? new Date(filters.dateFrom).getTime() : null;
+    const toTime = filters.dateTo ? new Date(filters.dateTo).getTime() : null;
+    const minAttendees = filters.attendeesMin === "" ? null : Number(filters.attendeesMin);
+    const maxAttendees = filters.attendeesMax === "" ? null : Number(filters.attendeesMax);
+
+    return events.filter(e => {
+      if (searchLower) {
+        const inName = e.name.toLowerCase().includes(searchLower);
+        const inLocation = (e.location ?? "").toLowerCase().includes(searchLower);
+        if (!inName && !inLocation) return false;
+      }
+      if (fromTime !== null) {
+        const eventTime = new Date(e.date).getTime();
+        if (Number.isFinite(eventTime) && eventTime < fromTime) return false;
+      }
+      if (toTime !== null) {
+        const eventTime = new Date(e.date).getTime();
+        const endOfDay = toTime + 24 * 60 * 60 * 1000 - 1;
+        if (Number.isFinite(eventTime) && eventTime > endOfDay) return false;
+      }
+      if (filters.eventType !== "all" && e.eventType !== filters.eventType) return false;
+      if (filters.status !== "all" && e.status !== filters.status) return false;
+      if (locationLower && !(e.location ?? "").toLowerCase().includes(locationLower)) return false;
+
+      const attendees = e.actualAttendees ?? e.estimatedAttendees ?? 0;
+      if (minAttendees !== null && !Number.isNaN(minAttendees) && attendees < minAttendees) return false;
+      if (maxAttendees !== null && !Number.isNaN(maxAttendees) && attendees > maxAttendees) return false;
+
+      return true;
+    });
+  }, [events, filters]);
 
   return (
     <div className="space-y-6">
@@ -51,16 +125,109 @@ export default function EventsList() {
       </div>
 
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 space-y-4">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search events by name or location..."
               className="pl-8 max-w-md"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={filters.search}
+              onChange={(e) => updateFilter("search", e.target.value)}
+              data-testid="filter-search"
             />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="filter-date-from" className="text-xs">Date from</Label>
+              <Input
+                id="filter-date-from"
+                type="date"
+                value={filters.dateFrom}
+                onChange={(e) => updateFilter("dateFrom", e.target.value)}
+                data-testid="filter-date-from"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="filter-date-to" className="text-xs">Date to</Label>
+              <Input
+                id="filter-date-to"
+                type="date"
+                value={filters.dateTo}
+                onChange={(e) => updateFilter("dateTo", e.target.value)}
+                data-testid="filter-date-to"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Type</Label>
+              <Select value={filters.eventType} onValueChange={(v) => updateFilter("eventType", v)}>
+                <SelectTrigger data-testid="filter-type"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {eventTypeOptions.map(t => (
+                    <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Status</Label>
+              <Select value={filters.status} onValueChange={(v) => updateFilter("status", v)}>
+                <SelectTrigger data-testid="filter-status"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {STATUS_OPTIONS.map(s => (
+                    <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="filter-location" className="text-xs">Location</Label>
+              <Input
+                id="filter-location"
+                placeholder="Filter by location"
+                value={filters.location}
+                onChange={(e) => updateFilter("location", e.target.value)}
+                data-testid="filter-location"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="filter-attendees-min" className="text-xs">Attendees min</Label>
+              <Input
+                id="filter-attendees-min"
+                type="number"
+                min={0}
+                placeholder="0"
+                value={filters.attendeesMin}
+                onChange={(e) => updateFilter("attendeesMin", e.target.value)}
+                data-testid="filter-attendees-min"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="filter-attendees-max" className="text-xs">Attendees max</Label>
+              <Input
+                id="filter-attendees-max"
+                type="number"
+                min={0}
+                placeholder="—"
+                value={filters.attendeesMax}
+                onChange={(e) => updateFilter("attendeesMax", e.target.value)}
+                data-testid="filter-attendees-max"
+              />
+            </div>
+            <div className="flex items-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={clearFilters}
+                disabled={!filtersActive}
+                className="w-full"
+                data-testid="filter-clear"
+              >
+                Clear filters
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -77,13 +244,14 @@ export default function EventsList() {
                     <TableHead>Status</TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead className="text-right">Attendees</TableHead>
+                    <TableHead className="text-right">Raised</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredEvents?.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        No events found matching "{search}"
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        {filtersActive ? "No events match your filters" : "No events found"}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -104,6 +272,9 @@ export default function EventsList() {
                         <TableCell>{event.location}</TableCell>
                         <TableCell className="text-right">
                           {event.actualAttendees ?? event.estimatedAttendees ?? 0}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums" data-testid={`event-raised-${event.id}`}>
+                          {currencyFormatter.format(event.totalRaised ?? 0)}
                         </TableCell>
                       </TableRow>
                     ))

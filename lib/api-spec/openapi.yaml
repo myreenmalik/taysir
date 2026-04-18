@@ -1070,6 +1070,8 @@ components:
           type: ["integer", "null"]
         notes:
           type: ["string", "null"]
+        totalRaised:
+          type: number
         createdAt:
           type: string
         updatedAt:

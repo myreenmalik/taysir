@@ -37,6 +37,7 @@ export const ListEventsResponseItem = zod.object({
   estimatedAttendees: zod.number().nullish(),
   actualAttendees: zod.number().nullish(),
   notes: zod.string().nullish(),
+  totalRaised: zod.number().optional(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -81,6 +82,7 @@ export const GetEventResponse = zod.object({
   estimatedAttendees: zod.number().nullish(),
   actualAttendees: zod.number().nullish(),
   notes: zod.string().nullish(),
+  totalRaised: zod.number().optional(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -119,6 +121,7 @@ export const UpdateEventResponse = zod.object({
   estimatedAttendees: zod.number().nullish(),
   actualAttendees: zod.number().nullish(),
   notes: zod.string().nullish(),
+  totalRaised: zod.number().optional(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -151,6 +154,7 @@ export const GetEventSummaryResponse = zod.object({
     estimatedAttendees: zod.number().nullish(),
     actualAttendees: zod.number().nullish(),
     notes: zod.string().nullish(),
+    totalRaised: zod.number().optional(),
     createdAt: zod.string(),
     updatedAt: zod.string(),
   }),
@@ -843,6 +847,7 @@ export const GetDonorProfileResponse = zod.object({
       estimatedAttendees: zod.number().nullish(),
       actualAttendees: zod.number().nullish(),
       notes: zod.string().nullish(),
+      totalRaised: zod.number().optional(),
       createdAt: zod.string(),
       updatedAt: zod.string(),
     }),

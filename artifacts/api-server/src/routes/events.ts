@@ -33,10 +33,24 @@ router.get("/events", async (req, res): Promise<void> => {
     }
   }
 
+  const revenueRows = await db
+    .select({
+      eventId: revenueEntriesTable.eventId,
+      total: sql<string>`coalesce(sum(${revenueEntriesTable.amount}), 0)`,
+    })
+    .from(revenueEntriesTable)
+    .groupBy(revenueEntriesTable.eventId);
+
+  const totalRaisedByEvent = new Map<number, number>();
+  for (const row of revenueRows) {
+    totalRaisedByEvent.set(row.eventId, parseFloat(row.total));
+  }
+
   res.json(events.map(e => ({
     ...e,
     estimatedAttendees: e.estimatedAttendees ?? null,
     actualAttendees: e.actualAttendees ?? null,
+    totalRaised: totalRaisedByEvent.get(e.id) ?? 0,
     createdAt: e.createdAt.toISOString(),
     updatedAt: e.updatedAt.toISOString(),
   })));

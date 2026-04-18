@@ -28,6 +28,7 @@ export interface Event {
   actualAttendees?: number | null;
   /** @nullable */
   notes?: string | null;
+  totalRaised?: number;
   createdAt: string;
   updatedAt: string;
 }
