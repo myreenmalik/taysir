@@ -21,11 +21,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MapPin, Calendar, Users, DollarSign, Target, CheckCircle2, AlertCircle, Clock, PieChart, Info } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MapPin, Calendar, Users, DollarSign, Target, CheckCircle2, AlertCircle, Clock, PieChart, Info, Search } from "lucide-react";
+import { useState, useMemo } from "react";
 
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
   const eventId = parseInt(id || "0", 10);
+
+  const [attendeeSearch, setAttendeeSearch] = useState("");
+  const [attendeeTypeFilter, setAttendeeTypeFilter] = useState("all");
+  const [attendeeStatusFilter, setAttendeeStatusFilter] = useState("all");
+  const [attendeeDonatedFilter, setAttendeeDonatedFilter] = useState("all");
 
   const { data: event, isLoading: loadingEvent } = useGetEvent(eventId, { query: { enabled: !!eventId, queryKey: getGetEventQueryKey(eventId) } });
   const { data: summary, isLoading: loadingSummary } = useGetEventSummary(eventId, { query: { enabled: !!eventId, queryKey: getGetEventSummaryQueryKey(eventId) } });
@@ -34,6 +42,25 @@ export default function EventDetail() {
   const { data: frfRecord } = useGetFRFRecord(eventId, { query: { enabled: !!eventId, queryKey: getGetFRFRecordQueryKey(eventId), retry: false } });
   const { data: allocations } = useListAllocations(eventId, { query: { enabled: !!eventId, queryKey: getListAllocationsQueryKey(eventId) } });
   const { data: attendees } = useListAttendees(eventId, { query: { enabled: !!eventId, queryKey: getListAttendeesQueryKey(eventId) } });
+
+  const attendeeTypes = useMemo(() => {
+    const set = new Set<string>();
+    (attendees ?? []).forEach(a => { if (a.attendeeType) set.add(a.attendeeType); });
+    return Array.from(set).sort();
+  }, [attendees]);
+
+  const filteredAttendees = useMemo(() => {
+    const term = attendeeSearch.trim().toLowerCase();
+    return (attendees ?? []).filter(a => {
+      if (term && !a.name.toLowerCase().includes(term)) return false;
+      if (attendeeTypeFilter !== "all" && a.attendeeType !== attendeeTypeFilter) return false;
+      if (attendeeStatusFilter === "attended" && !a.attended) return false;
+      if (attendeeStatusFilter === "rsvp" && a.attended) return false;
+      if (attendeeDonatedFilter === "yes" && !a.donated) return false;
+      if (attendeeDonatedFilter === "no" && a.donated) return false;
+      return true;
+    });
+  }, [attendees, attendeeSearch, attendeeTypeFilter, attendeeStatusFilter, attendeeDonatedFilter]);
   const { data: followUps } = useListFollowUpTasks({ eventId }, { query: { enabled: !!eventId, queryKey: getListFollowUpTasksQueryKey({ eventId }) } });
 
   if (loadingEvent || loadingSummary) {
@@ -320,11 +347,54 @@ export default function EventDetail() {
         <TabsContent value="attendees" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Attendees</CardTitle>
+              <CardTitle>Attendees ({filteredAttendees.length})</CardTitle>
               <CardDescription>List of people who RSVP'd or attended.</CardDescription>
             </CardHeader>
             <CardContent>
               {attendees && attendees.length > 0 ? (
+                <>
+                  <div className="flex flex-col gap-3 mb-4 md:flex-row md:items-center">
+                    <div className="relative flex-1 md:max-w-sm">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search by name..."
+                        value={attendeeSearch}
+                        onChange={(e) => setAttendeeSearch(e.target.value)}
+                        className="pl-8"
+                      />
+                    </div>
+                    <Select value={attendeeTypeFilter} onValueChange={setAttendeeTypeFilter}>
+                      <SelectTrigger className="md:w-[160px]">
+                        <SelectValue placeholder="Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        {attendeeTypes.map(t => (
+                          <SelectItem key={t} value={t} className="capitalize">{t.replace("-", " ")}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={attendeeStatusFilter} onValueChange={setAttendeeStatusFilter}>
+                      <SelectTrigger className="md:w-[160px]">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        <SelectItem value="attended">Attended</SelectItem>
+                        <SelectItem value="rsvp">RSVP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={attendeeDonatedFilter} onValueChange={setAttendeeDonatedFilter}>
+                      <SelectTrigger className="md:w-[160px]">
+                        <SelectValue placeholder="Donated" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="yes">Donated: Yes</SelectItem>
+                        <SelectItem value="no">Donated: No</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 <div className="rounded-md border">
                   <Table>
                     <TableHeader>
@@ -337,7 +407,7 @@ export default function EventDetail() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {attendees.map(attendee => (
+                      {filteredAttendees.length > 0 ? filteredAttendees.map(attendee => (
                         <TableRow key={attendee.id}>
                           <TableCell className="font-medium">
                             {attendee.donorId ? (
@@ -357,10 +427,17 @@ export default function EventDetail() {
                           <TableCell>{attendee.donated ? "Yes" : "No"}</TableCell>
                           <TableCell>{attendee.donationAmount ? `$${attendee.donationAmount.toLocaleString()}` : "—"}</TableCell>
                         </TableRow>
-                      ))}
+                      )) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                            No attendees match the current filters.
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </div>
+                </>
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
                   <Users className="h-8 w-8 mx-auto mb-3 opacity-50" />
