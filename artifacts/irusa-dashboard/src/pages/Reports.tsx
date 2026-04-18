@@ -14,6 +14,13 @@ export default function Reports() {
 
   const COLORS = ['#0f766e', '#1d4ed8', '#b45309', '#be123c', '#6d28d9'];
 
+  const truncate = (s: string, max = 18) => (s.length > max ? `${s.slice(0, max - 1)}…` : s);
+
+  const conversionChartData = (conversionData ?? []).map(d => ({
+    ...d,
+    conversionPct: (d.conversionRate ?? 0) * 100,
+  }));
+
   return (
     <div className="space-y-6">
       <div>
@@ -28,14 +35,25 @@ export default function Reports() {
             <CardDescription>Total funds raised per event broken down by payment type</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[400px] w-full">
+            <div className="h-[440px] w-full">
               {revenueData && revenueData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={revenueData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <BarChart data={revenueData} margin={{ top: 20, right: 30, left: 20, bottom: 90 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="eventName" />
+                    <XAxis
+                      dataKey="eventName"
+                      interval={0}
+                      angle={-35}
+                      textAnchor="end"
+                      height={90}
+                      tick={{ fontSize: 12 }}
+                      tickFormatter={(value: string) => truncate(value, 18)}
+                    />
                     <YAxis tickFormatter={(value) => `$${value/1000}k`} />
-                    <RechartsTooltip formatter={(value: number) => [`$${value.toLocaleString()}`, '']} />
+                    <RechartsTooltip
+                      formatter={(value: number) => [`$${value.toLocaleString()}`, '']}
+                      labelFormatter={(label: string) => label}
+                    />
                     <Legend />
                     <Bar dataKey="cashAmount" name="Cash" stackId="a" fill="#10b981" />
                     <Bar dataKey="checkAmount" name="Check" stackId="a" fill="#3b82f6" />
@@ -57,14 +75,14 @@ export default function Reports() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full">
-              {conversionData && conversionData.length > 0 ? (
+              {conversionChartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={conversionData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <BarChart data={conversionChartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                     <XAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
-                    <YAxis dataKey="eventName" type="category" width={100} tick={{fontSize: 12}} />
+                    <YAxis dataKey="eventName" type="category" width={100} tick={{fontSize: 12}} tickFormatter={(value: string) => truncate(value, 14)} />
                     <RechartsTooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Conversion Rate']} />
-                    <Bar dataKey="conversionRate" fill="#0f766e" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="conversionPct" fill="#0f766e" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -88,18 +106,25 @@ export default function Reports() {
                       data={causeData}
                       cx="50%"
                       cy="50%"
-                      labelLine={true}
-                      outerRadius={100}
+                      labelLine={false}
+                      outerRadius={90}
+                      innerRadius={0}
                       fill="#8884d8"
                       dataKey="totalDonated"
                       nameKey="cause"
-                      label={({ cause, percent }) => `${cause} (${(percent * 100).toFixed(0)}%)`}
+                      label={({ percent }) => `${((percent ?? 0) * 100).toFixed(0)}%`}
                     >
                       {causeData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <RechartsTooltip formatter={(value: number) => [`$${value.toLocaleString()}`, 'Total']} />
+                    <RechartsTooltip formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name]} />
+                    <Legend
+                      layout="vertical"
+                      align="right"
+                      verticalAlign="middle"
+                      wrapperStyle={{ fontSize: 12, paddingLeft: 12, maxWidth: '40%' }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
