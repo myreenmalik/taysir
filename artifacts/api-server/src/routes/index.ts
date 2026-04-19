@@ -12,6 +12,7 @@ import followupRouter from "./followup";
 import dashboardRouter from "./dashboard";
 import reportsRouter from "./reports";
 import importRouter from "./import";
+import aiMappingRouter from "./aiMapping";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(followupRouter);
 router.use(dashboardRouter);
 router.use(reportsRouter);
 router.use(importRouter);
+router.use(aiMappingRouter);
 
 export default router;

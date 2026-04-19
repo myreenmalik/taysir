@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Upload, FileText, AlertCircle, CheckCircle2, XCircle, RotateCcw, Download } from "lucide-react";
+import { Upload, FileText, AlertCircle, CheckCircle2, XCircle, RotateCcw, Download, Sparkles } from "lucide-react";
 
 type DataType = "donors" | "donations" | "events" | "revenue" | "logistics" | "followups";
 
@@ -203,6 +203,9 @@ export default function ImportData() {
   const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
   const [importResults, setImportResults] = useState<ImportResult[]>([]);
   const [parseError, setParseError] = useState<string | null>(null);
+  const [aiMapping, setAiMapping] = useState(false);
+  const [aiMappingError, setAiMappingError] = useState<string | null>(null);
+  const [aiMappingNotes, setAiMappingNotes] = useState<string | null>(null);
 
   const fields = FIELDS[dataType];
 
@@ -308,6 +311,46 @@ export default function ImportData() {
     }
     return Object.entries(counts).filter(([_, n]) => n > 1).map(([k]) => k);
   }, [mapping]);
+
+  const runAiMapping = async () => {
+    if (!parsedFile) return;
+    setAiMapping(true);
+    setAiMappingError(null);
+    setAiMappingNotes(null);
+    try {
+      const res = await fetch(`${API_BASE}/import/suggest-mapping`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dataType,
+          headers: parsedFile.headers,
+          sampleRows: parsedFile.rows.slice(0, 5),
+          targetFields: fields.map(f => ({
+            key: f.key,
+            label: f.label,
+            required: f.required,
+            type: f.type,
+          })),
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(err.error || "AI mapping failed");
+      }
+      const data = await res.json() as { mapping: Record<string, string | null>; notes: string };
+      const next: Record<string, string> = {};
+      for (const header of parsedFile.headers) {
+        const suggested = data.mapping[header];
+        next[header] = suggested ?? "__none__";
+      }
+      setMapping(next);
+      setAiMappingNotes(data.notes || null);
+    } catch (err) {
+      setAiMappingError(err instanceof Error ? err.message : "AI mapping failed");
+    } finally {
+      setAiMapping(false);
+    }
+  };
 
   // When a column is mapped to a target, clear that target from any other column
   const handleMappingChange = (header: string, value: string) => {
@@ -483,6 +526,37 @@ export default function ImportData() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/40 p-3">
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                onClick={runAiMapping}
+                disabled={aiMapping}
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                {aiMapping ? "Analyzing columns..." : "Map columns with AI"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Lets AI read your headers and sample values to suggest a mapping. Always review before importing.
+              </p>
+            </div>
+
+            {aiMappingError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{aiMappingError}</AlertDescription>
+              </Alert>
+            )}
+
+            {aiMappingNotes && (
+              <Alert>
+                <Sparkles className="h-4 w-4" />
+                <AlertTitle>AI suggestion</AlertTitle>
+                <AlertDescription>{aiMappingNotes}</AlertDescription>
+              </Alert>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {parsedFile.headers.map(header => (
                 <div key={header} className="space-y-1.5">
