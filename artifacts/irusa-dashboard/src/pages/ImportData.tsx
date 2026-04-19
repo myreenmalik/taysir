@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, Fragment, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { useQueryClient } from "@tanstack/react-query";
@@ -11,7 +11,7 @@ import { Upload, AlertCircle, CheckCircle2, RotateCcw, Sparkles, Trash2 } from "
 
 const API_BASE = `${import.meta.env.BASE_URL}api`.replace(/\/+/g, "/");
 
-type Entity = "donors" | "donations" | "events";
+type Entity = "donors" | "donations" | "events" | "revenue";
 
 type FieldDef = { key: string; label: string; required: boolean; type: string };
 
@@ -50,7 +50,10 @@ const ENTITY_LABEL: Record<Entity, string> = {
   donors: "Donors",
   donations: "Donations",
   events: "Events",
+  revenue: "Event Revenue",
 };
+
+const ENTITY_ORDER: Entity[] = ["donors", "donations", "events", "revenue"];
 
 function normHeader(h: string) { return h.trim().toLowerCase().replace(/\s+/g, " "); }
 
@@ -362,11 +365,12 @@ export default function ImportData() {
   function buildEntityRecords(): { donors: Record<string, unknown>[]; events: Record<string, unknown>[]; revenue: Record<string, unknown>[] } {
     const donors: Record<string, unknown>[] = [];
     const events: Record<string, unknown>[] = [];
-    if (!parsedFile) return { donors, events, revenue: [] };
+    if (!parsedFile) return { donors, events, revenue: [] as Record<string, unknown>[] };
 
     // Group columns by entity.
-    const colsByEntity: Record<Entity, { header: string; field: string }[]> = { donors: [], donations: [], events: [] };
-    const notesCols: Record<Entity, string[]> = { donors: [], donations: [], events: [] };
+    const colsByEntity: Record<Entity, { header: string; field: string }[]> = { donors: [], donations: [], events: [], revenue: [] };
+    const notesCols: Record<Entity, string[]> = { donors: [], donations: [], events: [], revenue: [] };
+    const revenue: Record<string, unknown>[] = [];
     const combineCols: { header: string; entity: Entity; field: string; with: string[]; separator: string }[] = [];
 
     for (const [header, m] of Object.entries(mapping)) {
@@ -428,7 +432,26 @@ export default function ImportData() {
       }
     }
 
-    return { donors, events, revenue: [] };
+    // Build revenue records (one per row) when revenue entity selected.
+    if (selectedEntities.has("revenue")) {
+      for (const row of parsedFile.rows) {
+        const rec: Record<string, unknown> = {};
+        for (const c of colsByEntity.revenue) rec[c.field] = row[c.header];
+        const noteParts: string[] = [];
+        for (const h of notesCols.revenue) {
+          const v = row[h]; if (v != null && String(v).trim() !== "") noteParts.push(`${h}: ${String(v).trim()}`);
+        }
+        const existingNotes = rec.notes ? String(rec.notes).trim() : "";
+        rec.notes = [existingNotes, noteParts.join(" | ")].filter(Boolean).join(" | ") || null;
+        for (const cc of combineCols.filter(c => c.entity === "revenue")) {
+          const parts = [cc.header, ...cc.with].map(h => row[h]).filter(v => v != null && String(v).trim() !== "").map(v => String(v).trim());
+          if (parts.length > 0) rec[cc.field] = parts.join(cc.separator);
+        }
+        if (rec.amount != null && String(rec.amount).trim() !== "") revenue.push(rec);
+      }
+    }
+
+    return { donors, events, revenue };
   }
 
   const proceedToReview = async () => {
@@ -642,7 +665,7 @@ export default function ImportData() {
                       {analyze.entitiesPresent.length === 0 && (
                         <p className="text-sm text-muted-foreground">No recognizable entities detected. You can still pick which entities to import below.</p>
                       )}
-                      {(["donors", "donations", "events"] as Entity[]).map(ent => {
+                      {ENTITY_ORDER.map(ent => {
                         const detected = analyze.entitiesPresent.find(e => e.entity === ent);
                         const count = detected?.estimatedCount ?? 0;
                         const conf = detected?.confidence ?? "low";
@@ -762,7 +785,7 @@ export default function ImportData() {
                                 }}
                               >
                                 <option value="__none__">— Ignore this column —</option>
-                                {(["donors", "donations", "events"] as Entity[]).filter(e => selectedEntities.has(e)).map(ent => (
+                                {ENTITY_ORDER.filter(e => selectedEntities.has(e)).map(ent => (
                                   <optgroup key={ent} label={ENTITY_LABEL[ent]}>
                                     {(analyze.schema[ent] ?? []).map(f => (
                                       <option key={`${ent}.${f.key}`} value={`field:${ent}.${f.key}`}>
@@ -776,6 +799,65 @@ export default function ImportData() {
                               {reason && (
                                 <p className="text-[10px] text-muted-foreground mt-1 italic max-w-[260px]">{reason}</p>
                               )}
+                              {/* Combine helper: when this column maps to a field, let the user merge other ignored columns into the same target. */}
+                              {m && (m.kind === "field" || m.kind === "combine") && (() => {
+                                const ignoredOthers = parsedFile.headers.filter(h => h !== header && mapping[h] == null);
+                                const currentWith = m.kind === "combine" ? m.with : [];
+                                const sep = m.kind === "combine" ? m.separator : " ";
+                                if (ignoredOthers.length === 0 && currentWith.length === 0) return null;
+                                return (
+                                  <div className="mt-1 space-y-1">
+                                    <details className="text-[10px] text-muted-foreground">
+                                      <summary className="cursor-pointer hover:text-foreground">
+                                        + Combine with other columns {currentWith.length > 0 ? `(${currentWith.length})` : ""}
+                                      </summary>
+                                      <div className="mt-1 p-2 border rounded bg-muted/30 space-y-1 max-w-[260px]">
+                                        <label className="flex items-center gap-1 text-[10px]">
+                                          <span>Separator:</span>
+                                          <input
+                                            type="text"
+                                            className="border rounded px-1 py-0.5 w-12 text-[10px]"
+                                            value={sep}
+                                            onChange={(e) => {
+                                              const newSep = e.target.value || " ";
+                                              const ent = m.entity;
+                                              const fld = m.field;
+                                              const w = m.kind === "combine" ? m.with : [];
+                                              if (w.length === 0) return;
+                                              updateMapping(header, { kind: "combine", entity: ent, field: fld, with: w, separator: newSep, source: "user" });
+                                            }}
+                                          />
+                                        </label>
+                                        {[...currentWith, ...ignoredOthers].map(other => {
+                                          const checked = currentWith.includes(other);
+                                          return (
+                                            <label key={other} className="flex items-center gap-1 text-[10px] cursor-pointer">
+                                              <input
+                                                type="checkbox"
+                                                checked={checked}
+                                                onChange={(e) => {
+                                                  const ent = m.entity;
+                                                  const fld = m.field;
+                                                  const next = e.target.checked
+                                                    ? [...currentWith, other]
+                                                    : currentWith.filter(h => h !== other);
+                                                  if (next.length === 0) {
+                                                    // Demote back to plain field mapping.
+                                                    updateMapping(header, { kind: "field", entity: ent, field: fld, confidence: "high", reason: "User chose", source: "user" });
+                                                  } else {
+                                                    updateMapping(header, { kind: "combine", entity: ent, field: fld, with: next, separator: sep, source: "user" });
+                                                  }
+                                                }}
+                                              />
+                                              <span className="truncate">{other}</span>
+                                            </label>
+                                          );
+                                        })}
+                                      </div>
+                                    </details>
+                                  </div>
+                                );
+                              })()}
                             </td>
                             <td className="p-2 align-top">
                               {isSaved && (
@@ -994,5 +1076,3 @@ export default function ImportData() {
   );
 }
 
-// Note: we no longer use unused Fragment imports, but keep available for future expansion.
-void Fragment;

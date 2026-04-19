@@ -40,6 +40,13 @@ const TARGET_SCHEMA = {
     { key: "estimatedAttendees", label: "Estimated Attendees", required: false, type: "integer" },
     { key: "notes", label: "Notes", required: false, type: "string" },
   ],
+  revenue: [
+    { key: "amount", label: "Amount", required: true, type: "number" },
+    { key: "paymentType", label: "Payment Type", required: true, type: "string" },
+    { key: "eventName", label: "Linked Event Name", required: false, type: "string" },
+    { key: "date", label: "Date", required: false, type: "date" },
+    { key: "notes", label: "Notes", required: false, type: "string" },
+  ],
 } as const;
 
 type Entity = keyof typeof TARGET_SCHEMA;
