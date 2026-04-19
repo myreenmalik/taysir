@@ -2,9 +2,8 @@ import { useGetDashboardSummary, useGetDashboardAlerts, useGetDonorSegments, use
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, AlertTriangle, Info, ArrowRight, DollarSign, Users, Calendar, AlertOctagon, Trophy } from "lucide-react";
+import { AlertCircle, AlertTriangle, Info, ArrowRight, DollarSign, Users, Calendar, AlertOctagon } from "lucide-react";
 import { Link } from "wouter";
-import { getTierColor } from "./donors/DonorsList";
 
 export default function Dashboard() {
   const { data: summary, isLoading: loadingSummary } = useGetDashboardSummary({ query: { queryKey: getGetDashboardSummaryQueryKey() } });
@@ -167,43 +166,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {summary?.tierBreakdown && (
-          <Card data-testid="card-tier-breakdown">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <CardTitle>Donor Tier Breakdown</CardTitle>
-              <Trophy className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {summary.tierBreakdown.map((t) => (
-                  <Link
-                    key={t.tier}
-                    href={`/donors?tiers=${t.tier}`}
-                    className="flex items-center justify-between rounded-md border px-3 py-2 hover:bg-accent transition-colors"
-                    data-testid={`link-tier-${t.tier}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Badge variant="outline" className={getTierColor(t.tier)}>{t.tier}</Badge>
-                      <span className="text-sm text-muted-foreground">{t.donorCount} donor{t.donorCount === 1 ? "" : "s"}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold tabular-nums">${Math.round(t.totalRaised).toLocaleString()}</span>
-                      <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                    </div>
-                  </Link>
-                ))}
-                <div className="pt-3 mt-2 border-t flex justify-between items-center text-sm">
-                  <span className="font-medium">Total</span>
-                  <span className="font-bold tabular-nums">
-                    {summary.tierBreakdown.reduce((s, t) => s + t.donorCount, 0)} donors · ${Math.round(summary.tierBreakdown.reduce((s, t) => s + t.totalRaised, 0)).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
+      <div className="grid grid-cols-1 gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Donor Segments</CardTitle>
