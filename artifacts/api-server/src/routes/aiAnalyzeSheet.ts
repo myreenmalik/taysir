@@ -97,7 +97,7 @@ router.post("/import/analyze-sheet", async (req: Request, res: Response) => {
 
   const prompt = `You are analyzing a fundraising spreadsheet uploaded by an Islamic Relief USA staff member. Your job is two things at once:
 
-A) DETECT which entity types (donors, donations, events) are present in this sheet, and roughly how many rows of each.
+A) DETECT which entity types (donors, donations, events, revenue) are present in this sheet, and roughly how many rows of each. "revenue" means non-donation event revenue (sponsorships, ticket sales, etc.) tied to an event by name.
 
 B) For each spreadsheet column, decide which target field it maps to in our schema (an entity + field combo, or null if it's junk/unmappable).
 
@@ -121,10 +121,10 @@ Rules:
 Respond with strict JSON in this exact shape:
 {
   "entitiesPresent": [
-    { "entity": "donors" | "donations" | "events", "estimatedCount": number, "confidence": "high"|"medium"|"low", "reason": "<short>" }
+    { "entity": "donors" | "donations" | "events" | "revenue", "estimatedCount": number, "confidence": "high"|"medium"|"low", "reason": "<short>" }
   ],
   "mapping": {
-    "<column header>": { "entity": "donors"|"donations"|"events", "field": "<field key>", "confidence": "high"|"medium"|"low", "reason": "<short>" } OR null
+    "<column header>": { "entity": "donors"|"donations"|"events"|"revenue", "field": "<field key>", "confidence": "high"|"medium"|"low", "reason": "<short>" } OR null
   },
   "notes": "<one short sentence about anything ambiguous>"
 }`;

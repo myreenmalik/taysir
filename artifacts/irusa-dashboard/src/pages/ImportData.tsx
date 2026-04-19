@@ -18,10 +18,12 @@ type FieldDef = { key: string; label: string; required: boolean; type: string };
 type Mapping = {
   // For each spreadsheet column header, where it maps. null = ignore.
   // "notes" is special: append "<header>: <value>" to a notes field on a chosen entity.
+  // "split" splits one column on a separator into multiple target fields (e.g. "Full Name" → first, last).
   [header: string]:
     | { kind: "field"; entity: Entity; field: string; confidence: string; reason: string; source: "ai" | "saved" | "user" }
     | { kind: "notes"; entity: Entity; source: "user" }
     | { kind: "combine"; entity: Entity; field: string; with: string[]; separator: string; source: "user" }
+    | { kind: "split"; entity: Entity; targets: { field: string }[]; separator: string; source: "user" }
     | null;
 };
 
@@ -372,13 +374,32 @@ export default function ImportData() {
     const notesCols: Record<Entity, string[]> = { donors: [], donations: [], events: [], revenue: [] };
     const revenue: Record<string, unknown>[] = [];
     const combineCols: { header: string; entity: Entity; field: string; with: string[]; separator: string }[] = [];
+    const splitCols: { header: string; entity: Entity; targets: { field: string }[]; separator: string }[] = [];
 
     for (const [header, m] of Object.entries(mapping)) {
       if (!m) continue;
       if (m.kind === "field") colsByEntity[m.entity].push({ header, field: m.field });
       else if (m.kind === "notes") notesCols[m.entity].push(header);
       else if (m.kind === "combine") combineCols.push({ header, entity: m.entity, field: m.field, with: m.with, separator: m.separator });
+      else if (m.kind === "split") splitCols.push({ header, entity: m.entity, targets: m.targets, separator: m.separator });
     }
+
+    // Split helper: explode one source column into multiple target fields per row.
+    const applySplit = (row: Record<string, unknown>, target: Record<string, unknown>, entity: Entity) => {
+      for (const sc of splitCols.filter(s => s.entity === entity)) {
+        const raw = row[sc.header];
+        if (raw == null || String(raw).trim() === "") continue;
+        const parts = String(raw).split(sc.separator).map(s => s.trim());
+        sc.targets.forEach((t, i) => {
+          // Last target absorbs the remainder if there are extra parts (e.g. "Mary Jo Smith" → first="Mary", last="Jo Smith").
+          if (i === sc.targets.length - 1 && parts.length > sc.targets.length) {
+            target[t.field] = parts.slice(i).join(sc.separator);
+          } else if (parts[i] != null) {
+            target[t.field] = parts[i];
+          }
+        });
+      }
+    };
 
     for (const row of parsedFile.rows) {
       // Build donor from this row (if selected).
@@ -406,6 +427,13 @@ export default function ImportData() {
           const parts = [cc.header, ...cc.with].map(h => row[h]).filter(v => v != null && String(v).trim() !== "").map(v => String(v).trim());
           if (parts.length > 0) donorRec[cc.field] = parts.join(cc.separator);
         }
+        // Splits (e.g. Full Name → first/last on the donor)
+        applySplit(row, donorRec, "donors");
+        if (selectedEntities.has("donations")) applySplit(row, donorRec, "donations");
+        // Donor name may be assembled from split parts (e.g. first + " " + last). If "name" is missing but firstName/lastName present, build it.
+        if (!donorRec.name && (donorRec.firstName || donorRec.lastName)) {
+          donorRec.name = [donorRec.firstName, donorRec.lastName].filter(Boolean).join(" ").trim();
+        }
         // Skip if no name OR no donation amount (purely empty row).
         if (donorRec.name && String(donorRec.name).trim()) {
           donors.push(donorRec);
@@ -426,6 +454,7 @@ export default function ImportData() {
           const parts = [cc.header, ...cc.with].map(h => row[h]).filter(v => v != null && String(v).trim() !== "").map(v => String(v).trim());
           if (parts.length > 0) eventRec[cc.field] = parts.join(cc.separator);
         }
+        applySplit(row, eventRec, "events");
         if (eventRec.name && String(eventRec.name).trim()) {
           events.push(eventRec);
         }
@@ -447,6 +476,7 @@ export default function ImportData() {
           const parts = [cc.header, ...cc.with].map(h => row[h]).filter(v => v != null && String(v).trim() !== "").map(v => String(v).trim());
           if (parts.length > 0) rec[cc.field] = parts.join(cc.separator);
         }
+        applySplit(row, rec, "revenue");
         if (rec.amount != null && String(rec.amount).trim() !== "") revenue.push(rec);
       }
     }
@@ -754,7 +784,9 @@ export default function ImportData() {
                           !m ? "__none__" :
                           m.kind === "field" ? `field:${m.entity}.${m.field}` :
                           m.kind === "notes" ? `notes:${m.entity}` :
-                          `field:${m.entity}.${m.field}`;
+                          m.kind === "combine" ? `field:${m.entity}.${m.field}` :
+                          m.kind === "split" ? `split:${m.entity}` :
+                          "__none__";
                         const conf = m && m.kind === "field" ? m.confidence : null;
                         const reason = m && m.kind === "field" ? m.reason : null;
                         const isSaved = m && m.kind === "field" && m.source === "saved";
@@ -798,6 +830,81 @@ export default function ImportData() {
                               {reason && (
                                 <p className="text-[10px] text-muted-foreground mt-1 italic max-w-[260px]">{reason}</p>
                               )}
+                              {/* Split helper: split this column into multiple target fields. */}
+                              {m && (m.kind === "field" || m.kind === "split") && (() => {
+                                const ent = m.entity;
+                                const isSplit = m.kind === "split";
+                                const targets = isSplit ? m.targets : [];
+                                const sep = isSplit ? m.separator : " ";
+                                const availableFields = (analyze.schema[ent] ?? []).filter(f => !targets.some(t => t.field === f.key));
+                                if (!isSplit && availableFields.length < 2) return null;
+                                return (
+                                  <div className="mt-1">
+                                    <details className="text-[10px] text-muted-foreground">
+                                      <summary className="cursor-pointer hover:text-foreground">
+                                        ✂ Split into multiple fields {isSplit ? `(${targets.length})` : ""}
+                                      </summary>
+                                      <div className="mt-1 p-2 border rounded bg-muted/30 space-y-1 max-w-[280px]">
+                                        <label className="flex items-center gap-1 text-[10px]">
+                                          <span>Split on:</span>
+                                          <input
+                                            type="text"
+                                            className="border rounded px-1 py-0.5 w-12 text-[10px]"
+                                            value={sep}
+                                            onChange={(e) => {
+                                              const newSep = e.target.value || " ";
+                                              if (isSplit) updateMapping(header, { kind: "split", entity: ent, targets, separator: newSep, source: "user" });
+                                            }}
+                                          />
+                                          <span className="text-muted-foreground">(space, comma, etc.)</span>
+                                        </label>
+                                        {targets.map((t, i) => (
+                                          <div key={i} className="flex items-center gap-1 text-[10px]">
+                                            <span className="text-muted-foreground w-10">Part {i + 1}:</span>
+                                            <select
+                                              className="border rounded px-1 py-0.5 text-[10px] flex-1"
+                                              value={t.field}
+                                              onChange={(e) => {
+                                                const next = targets.map((x, j) => j === i ? { field: e.target.value } : x);
+                                                updateMapping(header, { kind: "split", entity: ent, targets: next, separator: sep, source: "user" });
+                                              }}
+                                            >
+                                              {(analyze.schema[ent] ?? []).map(f => (
+                                                <option key={f.key} value={f.key}>{f.label}</option>
+                                              ))}
+                                            </select>
+                                            <button
+                                              type="button"
+                                              className="text-destructive hover:underline"
+                                              onClick={() => {
+                                                const next = targets.filter((_, j) => j !== i);
+                                                if (next.length === 0) {
+                                                  updateMapping(header, { kind: "field", entity: ent, field: (m.kind === "field" ? m.field : (analyze.schema[ent]?.[0]?.key ?? "")), confidence: "high", reason: "User chose", source: "user" });
+                                                } else {
+                                                  updateMapping(header, { kind: "split", entity: ent, targets: next, separator: sep, source: "user" });
+                                                }
+                                              }}
+                                            >×</button>
+                                          </div>
+                                        ))}
+                                        {availableFields.length > 0 && (
+                                          <button
+                                            type="button"
+                                            className="text-[10px] text-primary hover:underline"
+                                            onClick={() => {
+                                              const seedField = m.kind === "field" ? m.field : (availableFields[0]?.key ?? "");
+                                              const next = isSplit
+                                                ? [...targets, { field: availableFields[0].key }]
+                                                : [{ field: seedField }, { field: availableFields[0].key }];
+                                              updateMapping(header, { kind: "split", entity: ent, targets: next, separator: sep, source: "user" });
+                                            }}
+                                          >+ Add target field</button>
+                                        )}
+                                      </div>
+                                    </details>
+                                  </div>
+                                );
+                              })()}
                               {/* Combine helper: when this column maps to a field, let the user merge other ignored columns into the same target. */}
                               {m && (m.kind === "field" || m.kind === "combine") && (() => {
                                 const ignoredOthers = parsedFile.headers.filter(h => h !== header && mapping[h] == null);
