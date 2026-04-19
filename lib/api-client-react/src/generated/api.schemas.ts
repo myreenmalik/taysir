@@ -589,6 +589,7 @@ export interface EventPerformance {
   attendeeCount: number;
   donorConversionRate: number;
   eventType: string;
+  location?: string | null;
 }
 
 export interface RevenueByEvent {

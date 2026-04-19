@@ -229,6 +229,7 @@ router.get("/dashboard/top-events", async (_req, res): Promise<void> => {
       attendeeCount: eventAttendees.length,
       donorConversionRate: eventAttendees.length > 0 ? donors.length / eventAttendees.length : 0,
       eventType: event.eventType,
+      location: event.location,
     };
   });
 

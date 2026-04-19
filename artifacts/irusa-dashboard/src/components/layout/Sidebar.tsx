@@ -15,8 +15,7 @@ export function Sidebar() {
   return (
     <div className="w-64 border-r border-sidebar-border bg-sidebar h-screen flex flex-col fixed left-0 top-0">
       <div className="p-6 border-b border-sidebar-border">
-        <h1 className="text-xl font-bold text-sidebar-foreground">IRUSA Smart</h1>
-        <p className="text-sm text-muted-foreground">Donor Intelligence</p>
+        <h1 className="text-xl font-bold text-sidebar-foreground">IRUSA Smart Dashboard</h1>
       </div>
       <nav className="flex-1 overflow-y-auto p-4 space-y-1">
         {navItems.map((item) => (

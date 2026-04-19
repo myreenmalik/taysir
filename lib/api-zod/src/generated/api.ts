@@ -1175,6 +1175,7 @@ export const GetTopEventsResponseItem = zod.object({
   attendeeCount: zod.number(),
   donorConversionRate: zod.number(),
   eventType: zod.string(),
+  location: zod.string().nullish(),
 });
 export const GetTopEventsResponse = zod.array(GetTopEventsResponseItem);
 

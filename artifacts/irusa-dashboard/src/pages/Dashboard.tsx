@@ -115,9 +115,15 @@ export default function Dashboard() {
                   <div key={event.eventId} className="flex items-center justify-between pb-4 border-b last:border-0 last:pb-0">
                     <div>
                       <Link href={`/events/${event.eventId}`} className="font-medium hover:underline">{event.eventName}</Link>
-                      <div className="text-sm text-muted-foreground flex gap-2 items-center">
+                      <div className="text-sm text-muted-foreground flex gap-2 items-center flex-wrap">
                         <Badge variant="outline" className="capitalize text-xs font-normal">{event.eventType}</Badge>
                         <span>{new Date(event.date).toLocaleDateString()}</span>
+                        {event.location ? (
+                          <>
+                            <span aria-hidden="true">·</span>
+                            <span>{event.location}</span>
+                          </>
+                        ) : null}
                       </div>
                     </div>
                     <div className="text-right">

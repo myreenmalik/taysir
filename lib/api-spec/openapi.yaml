@@ -2108,6 +2108,9 @@ components:
           type: number
         eventType:
           type: string
+        location:
+          type: string
+          nullable: true
       required:
         - eventId
         - eventName
