@@ -7,3 +7,4 @@ export * from "./attendees";
 export * from "./donors";
 export * from "./donations";
 export * from "./followup";
+export * from "./mappingCorrections";
