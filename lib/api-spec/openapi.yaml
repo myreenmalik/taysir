@@ -1072,6 +1072,8 @@ components:
           type: ["string", "null"]
         totalRaised:
           type: number
+        attendeeCount:
+          type: integer
         createdAt:
           type: string
         updatedAt:

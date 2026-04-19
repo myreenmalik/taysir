@@ -33,17 +33,32 @@ router.get("/events", async (req, res): Promise<void> => {
     }
   }
 
-  const revenueRows = await db
-    .select({
-      eventId: revenueEntriesTable.eventId,
-      total: sql<string>`coalesce(sum(${revenueEntriesTable.amount}), 0)`,
-    })
-    .from(revenueEntriesTable)
-    .groupBy(revenueEntriesTable.eventId);
+  const [revenueRows, attendeeCountRows] = await Promise.all([
+    db
+      .select({
+        eventId: revenueEntriesTable.eventId,
+        total: sql<string>`coalesce(sum(${revenueEntriesTable.amount}), 0)`,
+      })
+      .from(revenueEntriesTable)
+      .groupBy(revenueEntriesTable.eventId),
+    db
+      .select({
+        eventId: attendeesTable.eventId,
+        count: sql<string>`count(*)`,
+      })
+      .from(attendeesTable)
+      .where(eq(attendeesTable.attended, true))
+      .groupBy(attendeesTable.eventId),
+  ]);
 
   const totalRaisedByEvent = new Map<number, number>();
   for (const row of revenueRows) {
     totalRaisedByEvent.set(row.eventId, parseFloat(row.total));
+  }
+
+  const attendeeCountByEvent = new Map<number, number>();
+  for (const row of attendeeCountRows) {
+    attendeeCountByEvent.set(row.eventId, parseInt(row.count, 10));
   }
 
   res.json(events.map(e => ({
@@ -51,6 +66,7 @@ router.get("/events", async (req, res): Promise<void> => {
     estimatedAttendees: e.estimatedAttendees ?? null,
     actualAttendees: e.actualAttendees ?? null,
     totalRaised: totalRaisedByEvent.get(e.id) ?? 0,
+    attendeeCount: attendeeCountByEvent.get(e.id) ?? 0,
     createdAt: e.createdAt.toISOString(),
     updatedAt: e.updatedAt.toISOString(),
   })));

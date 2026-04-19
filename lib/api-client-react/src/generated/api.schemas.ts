@@ -29,6 +29,7 @@ export interface Event {
   /** @nullable */
   notes?: string | null;
   totalRaised?: number;
+  attendeeCount?: number;
   createdAt: string;
   updatedAt: string;
 }

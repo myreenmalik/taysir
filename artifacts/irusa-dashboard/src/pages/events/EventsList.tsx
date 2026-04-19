@@ -104,7 +104,7 @@ export default function EventsList() {
       if (filters.status !== "all" && e.status !== filters.status) return false;
       if (locationLower && !(e.location ?? "").toLowerCase().includes(locationLower)) return false;
 
-      const attendees = e.actualAttendees ?? e.estimatedAttendees ?? 0;
+      const attendees = e.attendeeCount ?? 0;
       if (minAttendees !== null && !Number.isNaN(minAttendees) && attendees < minAttendees) return false;
       if (maxAttendees !== null && !Number.isNaN(maxAttendees) && attendees > maxAttendees) return false;
 
@@ -270,8 +270,8 @@ export default function EventsList() {
                           </Badge>
                         </TableCell>
                         <TableCell>{event.location}</TableCell>
-                        <TableCell className="text-right">
-                          {event.actualAttendees ?? event.estimatedAttendees ?? 0}
+                        <TableCell className="text-right tabular-nums" data-testid={`event-attendees-${event.id}`}>
+                          {event.attendeeCount ?? 0}
                         </TableCell>
                         <TableCell className="text-right tabular-nums" data-testid={`event-raised-${event.id}`}>
                           {currencyFormatter.format(event.totalRaised ?? 0)}
