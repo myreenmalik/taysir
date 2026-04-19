@@ -6,3 +6,9 @@ id = "KJByfuuCZuXfpUBYGivWu"
 uri = "file://attached_assets/irusa_demo_messy_eid_2026.xlsx"
 type = "table"
 title = "IRUSA Demo — Messy Eid 2026 Workbook"
+
+[[outputs]]
+id = "AliZwnWNlchEQ74dn1BYm"
+uri = "file://attached_assets/demo-imports/IRUSA_Donor_Intake_2026.csv"
+type = "table"
+title = "IRUSA Donor Intake 2026 (demo CSV)"
