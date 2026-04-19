@@ -8,6 +8,8 @@ import {
   useListAllocations,
   useListAttendees,
   useListFollowUpTasks,
+  useListDonors,
+  getListDonorsQueryKey,
   getGetEventQueryKey, 
   getGetEventSummaryQueryKey,
   getListLogisticsTasksQueryKey,
@@ -26,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MapPin, Calendar, Users, DollarSign, Target, CheckCircle2, AlertCircle, Clock, PieChart, Info, Search } from "lucide-react";
 import { useState, useMemo } from "react";
+import { SendEmailButton, deriveEmailSubject } from "@/components/SendEmailButton";
 
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
@@ -72,6 +75,13 @@ export default function EventDetail() {
     setAttendeeDonatedFilter("all");
   };
   const { data: followUps } = useListFollowUpTasks({ eventId }, { query: { enabled: !!eventId, queryKey: getListFollowUpTasksQueryKey({ eventId }) } });
+  const followUpHasDonor = useMemo(() => (followUps ?? []).some(t => t.donorId != null), [followUps]);
+  const { data: donorsForFollowUp } = useListDonors({}, { query: { enabled: followUpHasDonor, queryKey: getListDonorsQueryKey() } });
+  const donorLookup = useMemo(() => {
+    const map = new Map<number, { name: string; email: string | null }>();
+    (donorsForFollowUp ?? []).forEach(d => map.set(d.id, { name: d.name, email: d.email ?? null }));
+    return map;
+  }, [donorsForFollowUp]);
 
   if (loadingEvent || loadingSummary) {
     return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading event details...</div>;
@@ -479,21 +489,39 @@ export default function EventDetail() {
                         <TableHead>Action</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Due</TableHead>
+                        <TableHead className="text-right">Outreach</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {followUps.map(task => (
-                        <TableRow key={task.id}>
-                          <TableCell className="capitalize font-medium">{task.taskType.replace("-", " ")}</TableCell>
-                          <TableCell>{task.recommendedAction}</TableCell>
-                          <TableCell>
-                            <Badge variant={task.status === "completed" ? "default" : task.status === "in-progress" ? "secondary" : "outline"}>
-                              {task.status.replace("-", " ")}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "—"}</TableCell>
-                        </TableRow>
-                      ))}
+                      {followUps.map(task => {
+                        const outreachTypes = new Set(["thank-you-email", "donation-ask", "volunteer-invite", "stewardship-call"]);
+                        const isOutreach = outreachTypes.has(task.taskType);
+                        const donor = task.donorId != null ? donorLookup.get(task.donorId) : undefined;
+                        return (
+                          <TableRow key={task.id}>
+                            <TableCell className="capitalize font-medium">{task.taskType.replace("-", " ")}</TableCell>
+                            <TableCell>{task.recommendedAction}</TableCell>
+                            <TableCell>
+                              <Badge variant={task.status === "completed" ? "default" : task.status === "in-progress" ? "secondary" : "outline"}>
+                                {task.status.replace("-", " ")}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "—"}</TableCell>
+                            <TableCell className="text-right">
+                              {isOutreach && task.donorId != null ? (
+                                <SendEmailButton
+                                  email={donor?.email}
+                                  subject={deriveEmailSubject(task.recommendedAction)}
+                                  body={task.notes || task.recommendedAction}
+                                  noEmailTooltip={donor ? `No email on file for ${donor.name}.` : "No email on file for this donor."}
+                                />
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>

@@ -3,6 +3,7 @@ import { useGetDonorProfile, getGetDonorProfileQueryKey } from "@workspace/api-c
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Mail, Phone, MapPin, Calendar, AlertTriangle, TrendingUp, Sparkles } from "lucide-react";
+import { SendEmailButton, deriveEmailSubject } from "@/components/SendEmailButton";
 
 export default function DonorProfile() {
   const { id } = useParams<{ id: string }>();
@@ -93,6 +94,14 @@ export default function DonorProfile() {
                         "{rec.suggestedMessage}"
                       </div>
                     )}
+                    <div className="mt-3 flex justify-end">
+                      <SendEmailButton
+                        email={donor.email}
+                        subject={rec.suggestedSubject || deriveEmailSubject(rec.action)}
+                        body={rec.suggestedMessage || rec.action}
+                        noEmailTooltip={`No email on file for ${donor.name}.`}
+                      />
+                    </div>
                   </div>
                 ))}
               </CardContent>
