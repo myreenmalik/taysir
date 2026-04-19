@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
-import { db, followUpTasksTable, attendeesTable, eventsTable } from "@workspace/db";
+import { eq, and, gt } from "drizzle-orm";
+import { db, followUpTasksTable, attendeesTable, eventsTable, donorsTable } from "@workspace/db";
 import {
   ListFollowUpTasksQueryParams,
   CreateFollowUpTaskBody,
@@ -157,5 +157,107 @@ router.post("/events/:eventId/generate-followups", async (req, res): Promise<voi
   const tasks = await db.insert(followUpTasksTable).values(tasksToCreate).returning();
   res.json(tasks.map(serializeTask));
 });
+
+// Auto-generate per-donor follow-up tasks based on donor signals.
+// Rules (all idempotent — won't double-create within their dedupe window):
+//  - thank-you-email: donor donated within last 30 days, no thank-you task created since their last donation
+//  - donation-ask (re-engagement): donorCategory == "lapsed", no donation-ask in last 90 days
+//  - stewardship-call: donorCategory == "major" AND lastDonationDate older than 90 days, no stewardship in last 90 days
+//  - donation-ask (upgrade): donorCategory == "recurring" AND totalDonated >= 1000 AND lastDonation older than 60 days, no donation-ask in last 90 days
+router.post("/donors/generate-followups", async (_req, res): Promise<void> => {
+  const donors = await db.select().from(donorsTable);
+  const now = Date.now();
+  const day = 24 * 60 * 60 * 1000;
+  const dueDate = new Date(now + 7 * day).toISOString().split("T")[0];
+
+  const tasksToCreate: Array<typeof followUpTasksTable.$inferInsert> = [];
+
+  for (const donor of donors) {
+    const lastDonationMs = donor.lastDonationDate ? new Date(donor.lastDonationDate).getTime() : null;
+    const ageDays = lastDonationMs != null ? Math.floor((now - lastDonationMs) / day) : null;
+
+    // Existing tasks for this donor (used to dedupe)
+    const existing = await db.select().from(followUpTasksTable).where(eq(followUpTasksTable.donorId, donor.id));
+    const hasRecent = (taskType: string, withinDays: number) => existing.some(t => {
+      if (t.taskType !== taskType) return false;
+      const created = t.createdAt.getTime();
+      return (now - created) <= withinDays * day;
+    });
+    const hasSinceLastDonation = (taskType: string) => {
+      if (lastDonationMs == null) return false;
+      return existing.some(t => t.taskType === taskType && t.createdAt.getTime() >= lastDonationMs);
+    };
+
+    // 1) Thank-you for recent donation
+    if (lastDonationMs != null && ageDays != null && ageDays <= 30 && !hasSinceLastDonation("thank-you-email")) {
+      tasksToCreate.push({
+        eventId: null,
+        attendeeId: null,
+        donorId: donor.id,
+        taskType: "thank-you-email",
+        recommendedAction: `Send a thank-you to ${donor.name} for their recent gift`,
+        status: "not-started",
+        dueDate,
+        notes: `Last donation: ${donor.lastDonationDate} ($${donor.averageDonation} avg, $${donor.totalDonated} lifetime)`,
+      });
+    }
+
+    // 2) Re-engage lapsed donors
+    if (donor.donorCategory === "lapsed" && !hasRecent("donation-ask", 90)) {
+      tasksToCreate.push({
+        eventId: null,
+        attendeeId: null,
+        donorId: donor.id,
+        taskType: "donation-ask",
+        recommendedAction: `Re-engage lapsed donor ${donor.name}`,
+        status: "not-started",
+        dueDate,
+        notes: `Lapsed donor — last donation ${donor.lastDonationDate ?? "unknown"}. Lifetime $${donor.totalDonated} across ${donor.donationCount} gifts.`,
+      });
+    }
+
+    // 3) Stewardship call for major donors who've gone quiet
+    if (donor.donorCategory === "major" && ageDays != null && ageDays > 90 && !hasRecent("stewardship-call", 90)) {
+      tasksToCreate.push({
+        eventId: null,
+        attendeeId: null,
+        donorId: donor.id,
+        taskType: "stewardship-call",
+        recommendedAction: `Stewardship check-in with major donor ${donor.name}`,
+        status: "not-started",
+        dueDate,
+        notes: `Major donor — $${donor.totalDonated} lifetime, last donation ${ageDays} days ago.`,
+      });
+    }
+
+    // 4) Upgrade ask for recurring donors who've slowed down
+    if (donor.donorCategory === "recurring" && Number(donor.totalDonated) >= 1000 && ageDays != null && ageDays > 60 && !hasRecent("donation-ask", 90)) {
+      tasksToCreate.push({
+        eventId: null,
+        attendeeId: null,
+        donorId: donor.id,
+        taskType: "donation-ask",
+        recommendedAction: `Upgrade ask for recurring donor ${donor.name}`,
+        status: "not-started",
+        dueDate,
+        notes: `Recurring donor at $${donor.averageDonation} avg, ${donor.donationCount} gifts. Hasn't given in ${ageDays} days — invite them to step up.`,
+      });
+    }
+  }
+
+  if (tasksToCreate.length === 0) {
+    res.json({ created: 0, byType: {}, tasks: [] });
+    return;
+  }
+
+  const created = await db.insert(followUpTasksTable).values(tasksToCreate).returning();
+  const byType: Record<string, number> = {};
+  for (const t of created) byType[t.taskType] = (byType[t.taskType] ?? 0) + 1;
+
+  res.json({ created: created.length, byType, tasks: created.map(serializeTask) });
+});
+
+// Suppress unused imports if helper is added later
+void and; void gt;
 
 export default router;

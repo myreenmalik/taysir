@@ -1,4 +1,5 @@
-import { useListDonors, getListDonorsQueryKey } from "@workspace/api-client-react";
+import { useListDonors, getListDonorsQueryKey, useGenerateDonorFollowUps } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -9,9 +10,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
 import { Link, useSearch, useLocation } from "wouter";
-import { useMemo, useCallback } from "react";
-import { Search, ChevronDown, X, CalendarIcon } from "lucide-react";
+import { useMemo, useCallback, useState } from "react";
+import { Search, ChevronDown, X, CalendarIcon, Sparkles } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 const CATEGORIES = ["major", "lapsed", "recurring", "emergency-responder", "seasonal", "one-time"] as const;
 const PERSONALITIES = ["Altruist", "Investor", "Repayer"] as const;
@@ -65,6 +67,31 @@ export default function DonorsList() {
   const clearAll = () => setLocation("/donors", { replace: false });
 
   const { data: donors, isLoading } = useListDonors({}, { query: { queryKey: getListDonorsQueryKey() } });
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const generateFollowUps = useGenerateDonorFollowUps();
+  const [lastGenSummary, setLastGenSummary] = useState<{ created: number; byType: Record<string, number> } | null>(null);
+
+  const handleGenerateFollowUps = () => {
+    generateFollowUps.mutate(undefined, {
+      onSuccess: (data) => {
+        setLastGenSummary({ created: data.created, byType: data.byType ?? {} });
+        const breakdown = Object.entries(data.byType ?? {})
+          .map(([type, n]) => `${n} ${type.replace(/-/g, " ")}`)
+          .join(", ");
+        toast({
+          title: data.created === 0 ? "No new follow-ups needed" : `Generated ${data.created} follow-up${data.created === 1 ? "" : "s"}`,
+          description: data.created === 0
+            ? "Every donor already has up-to-date outreach tasks."
+            : breakdown,
+        });
+        void queryClient.invalidateQueries();
+      },
+      onError: (err) => {
+        toast({ title: "Couldn't generate follow-ups", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
+      },
+    });
+  };
 
   const getCategoryColor = (category: string) => {
     switch (category) {
@@ -151,10 +178,34 @@ export default function DonorsList() {
           <h1 className="text-3xl font-bold tracking-tight">Donors</h1>
           <p className="text-muted-foreground">Manage donor profiles and relationship history.</p>
         </div>
-        <Link href="/donors/new" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
-          New Donor
-        </Link>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleGenerateFollowUps}
+            disabled={generateFollowUps.isPending}
+            data-testid="button-generate-followups"
+            className="gap-2"
+          >
+            <Sparkles className="h-4 w-4" />
+            {generateFollowUps.isPending ? "Generating…" : "Generate follow-ups"}
+          </Button>
+          <Link href="/donors/new" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+            New Donor
+          </Link>
+        </div>
       </div>
+
+      {lastGenSummary && lastGenSummary.created > 0 && (
+        <div className="rounded-md border bg-primary/5 px-4 py-3 text-sm" data-testid="banner-followups-generated">
+          <div className="font-medium">Created {lastGenSummary.created} new follow-up task{lastGenSummary.created === 1 ? "" : "s"}.</div>
+          <div className="text-muted-foreground mt-1">
+            {Object.entries(lastGenSummary.byType).map(([type, n]) => (
+              <span key={type} className="mr-3 capitalize">{n} × {type.replace(/-/g, " ")}</span>
+            ))}
+            <span>Open any donor to see their tasks.</span>
+          </div>
+        </div>
+      )}
 
       <Card>
         <CardHeader className="pb-3 space-y-3">

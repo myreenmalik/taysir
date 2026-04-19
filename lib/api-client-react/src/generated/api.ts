@@ -43,6 +43,7 @@ import type {
   FRFRecord,
   FRFStatusReport,
   FollowUpTask,
+  GenerateDonorFollowUps200,
   HealthStatus,
   ListDonationsParams,
   ListDonorsParams,
@@ -3637,6 +3638,90 @@ export const useGenerateEventFollowUps = <
   TContext
 > => {
   return useMutation(getGenerateEventFollowUpsMutationOptions(options));
+};
+
+/**
+ * @summary Auto-generate per-donor follow-up tasks (thank-yous, asks, stewardship)
+ */
+export const getGenerateDonorFollowUpsUrl = () => {
+  return `/api/donors/generate-followups`;
+};
+
+export const generateDonorFollowUps = async (
+  options?: RequestInit,
+): Promise<GenerateDonorFollowUps200> => {
+  return customFetch<GenerateDonorFollowUps200>(
+    getGenerateDonorFollowUpsUrl(),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getGenerateDonorFollowUpsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateDonorFollowUps>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generateDonorFollowUps>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["generateDonorFollowUps"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generateDonorFollowUps>>,
+    void
+  > = () => {
+    return generateDonorFollowUps(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GenerateDonorFollowUpsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generateDonorFollowUps>>
+>;
+
+export type GenerateDonorFollowUpsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Auto-generate per-donor follow-up tasks (thank-yous, asks, stewardship)
+ */
+export const useGenerateDonorFollowUps = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateDonorFollowUps>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generateDonorFollowUps>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getGenerateDonorFollowUpsMutationOptions(options));
 };
 
 /**

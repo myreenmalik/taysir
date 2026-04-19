@@ -899,6 +899,31 @@ paths:
                 items:
                   $ref: "#/components/schemas/FollowUpTask"
 
+  /donors/generate-followups:
+    post:
+      operationId: generateDonorFollowUps
+      tags: [followup]
+      summary: Auto-generate per-donor follow-up tasks (thank-yous, asks, stewardship)
+      responses:
+        "200":
+          description: Summary of generated tasks
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [created, byType, tasks]
+                properties:
+                  created:
+                    type: integer
+                  byType:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                  tasks:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/FollowUpTask"
+
   # ==================== DASHBOARD ====================
   /dashboard/summary:
     get:

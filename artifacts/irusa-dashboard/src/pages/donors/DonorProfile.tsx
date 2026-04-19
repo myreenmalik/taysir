@@ -1,15 +1,23 @@
 import { useParams } from "wouter";
-import { useGetDonorProfile, getGetDonorProfileQueryKey } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useQueryClient } from "@tanstack/react-query";
+import { useGetDonorProfile, getGetDonorProfileQueryKey, useListFollowUpTasks, getListFollowUpTasksQueryKey, useUpdateFollowUpTask } from "@workspace/api-client-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Phone, MapPin, Calendar, AlertTriangle, TrendingUp, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Mail, Phone, MapPin, Calendar, AlertTriangle, Sparkles, ListChecks, Check } from "lucide-react";
 import { SendEmailButton, deriveEmailSubject } from "@/components/SendEmailButton";
+
+const OUTREACH_TASK_TYPES = new Set(["thank-you-email", "donation-ask", "volunteer-invite", "stewardship-call"]);
 
 export default function DonorProfile() {
   const { id } = useParams<{ id: string }>();
   const donorId = parseInt(id || "0", 10);
 
+  const queryClient = useQueryClient();
   const { data: profile, isLoading } = useGetDonorProfile(donorId, { query: { enabled: !!donorId, queryKey: getGetDonorProfileQueryKey(donorId) } });
+  const { data: followUps } = useListFollowUpTasks({ donorId }, { query: { enabled: !!donorId, queryKey: getListFollowUpTasksQueryKey({ donorId }) } });
+  const updateTask = useUpdateFollowUpTask();
+  const openTasks = (followUps ?? []).filter(t => t.status !== "completed");
 
   if (isLoading) {
     return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading donor profile...</div>;
@@ -101,6 +109,56 @@ export default function DonorProfile() {
                         body={rec.suggestedMessage || rec.action}
                         noEmailTooltip={`No email on file for ${donor.name}.`}
                       />
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Open Follow-Up Tasks */}
+          {openTasks.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3 flex flex-row items-center gap-2">
+                <ListChecks className="h-5 w-5 text-primary" />
+                <CardTitle>Open Follow-Up Tasks</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {openTasks.map(task => (
+                  <div key={task.id} className="bg-background rounded-md p-4 border shadow-sm" data-testid={`followup-task-${task.id}`}>
+                    <div className="flex items-start justify-between gap-4 mb-1">
+                      <div>
+                        <div className="font-semibold">{task.recommendedAction}</div>
+                        <div className="text-xs text-muted-foreground capitalize">
+                          {task.taskType.replace(/-/g, " ")}{task.dueDate ? ` · due ${new Date(task.dueDate).toLocaleDateString()}` : ""}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="capitalize">{task.status.replace(/-/g, " ")}</Badge>
+                    </div>
+                    {task.notes && <p className="text-sm text-muted-foreground mt-2">{task.notes}</p>}
+                    <div className="mt-3 flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          updateTask.mutate(
+                            { id: task.id, data: { status: "completed" } },
+                            { onSuccess: () => queryClient.invalidateQueries({ queryKey: getListFollowUpTasksQueryKey({ donorId }) }) },
+                          );
+                        }}
+                        disabled={updateTask.isPending}
+                        data-testid={`button-complete-task-${task.id}`}
+                      >
+                        <Check className="h-4 w-4 mr-1" /> Mark done
+                      </Button>
+                      {OUTREACH_TASK_TYPES.has(task.taskType) && (
+                        <SendEmailButton
+                          email={donor.email}
+                          subject={deriveEmailSubject(task.recommendedAction)}
+                          body={task.notes || task.recommendedAction}
+                          noEmailTooltip={`No email on file for ${donor.name}.`}
+                        />
+                      )}
                     </div>
                   </div>
                 ))}

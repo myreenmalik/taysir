@@ -1068,6 +1068,28 @@ export const GenerateEventFollowUpsResponse = zod.array(
 );
 
 /**
+ * @summary Auto-generate per-donor follow-up tasks (thank-yous, asks, stewardship)
+ */
+export const GenerateDonorFollowUpsResponse = zod.object({
+  created: zod.number(),
+  byType: zod.record(zod.string(), zod.number()),
+  tasks: zod.array(
+    zod.object({
+      id: zod.number(),
+      eventId: zod.number().nullish(),
+      attendeeId: zod.number().nullish(),
+      donorId: zod.number().nullish(),
+      taskType: zod.string(),
+      recommendedAction: zod.string(),
+      status: zod.string(),
+      dueDate: zod.string().nullish(),
+      notes: zod.string().nullish(),
+      createdAt: zod.string(),
+    }),
+  ),
+});
+
+/**
  * @summary Get overall dashboard metrics
  */
 export const GetDashboardSummaryResponse = zod.object({

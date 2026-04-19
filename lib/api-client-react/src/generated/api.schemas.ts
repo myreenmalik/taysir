@@ -620,3 +620,11 @@ export type ListFollowUpTasksParams = {
   donorId?: number;
   status?: string;
 };
+
+export type GenerateDonorFollowUps200ByType = { [key: string]: number };
+
+export type GenerateDonorFollowUps200 = {
+  created: number;
+  byType: GenerateDonorFollowUps200ByType;
+  tasks: FollowUpTask[];
+};
