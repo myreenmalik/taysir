@@ -73,7 +73,3 @@ Two flagship moments from the hackathon demo:
 
 1. **Drop a messy spreadsheet, get clean data** — the included sample (`attached_assets/demo-imports/IRUSA_Donor_Intake_2026.csv`) has real-world-style messy headers ("Donor Full Name", "$ Amount", "Pmt Method", "Fund / Cause"). The AI correctly maps every column on first try.
 2. **Personalized cause-aware outreach** — open *Maryam Siddiqui* (`/donors/8`). Her open follow-up is titled *"Upgrade ask for recurring orphan-support donor Maryam Siddiqui"* and the email body name-checks her cause, gift count, and lifetime total. Nothing is hand-written; everything is derived from her donation history.
-
-## Built By
-
-HackMSA 2026 team.
