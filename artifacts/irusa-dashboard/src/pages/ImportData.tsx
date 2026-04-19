@@ -334,7 +334,9 @@ export default function ImportData() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           dataType,
-          rows: validRows.map(v => v.row),
+          // Tag each row with its original spreadsheet row index so the
+          // backend can report failures against the user's source file.
+          rows: validRows.map(v => ({ ...v.row, __sourceRowIndex: v.idx })),
           duplicateStrategy,
         }),
       });
@@ -367,12 +369,14 @@ export default function ImportData() {
 
   const downloadFailures = () => {
     if (!parsedFile) return;
+    // r.index is the original source row index (we tagged it via __sourceRowIndex).
+    // Convert to a human-friendly 1-based row number including the header row.
     const failureRows = importResults
       .filter(r => r.status === "failed")
       .map(r => ({
-        row_number: r.index + 2, // header + 1-indexed
+        row_number: r.index + 2,
         reason: r.reason,
-        ...parsedFile.rows[validRows[r.index]?.idx ?? r.index],
+        ...(parsedFile.rows[r.index] ?? {}),
       }));
     if (failureRows.length === 0) return;
     downloadCSV(`import-failures-${dataType}-${Date.now()}.csv`, failureRows);
