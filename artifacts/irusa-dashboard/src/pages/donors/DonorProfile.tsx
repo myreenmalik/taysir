@@ -232,7 +232,10 @@ export default function DonorProfile() {
                         <SendEmailButton
                           email={donor.email}
                           subject={deriveEmailSubject(task.recommendedAction)}
-                          body={task.notes || task.recommendedAction}
+                          body={
+                            task.suggestedMessage ||
+                            `Dear ${donor.name},\n\n${task.recommendedAction}.${task.notes ? `\n\n${task.notes}` : ""}\n\nWith gratitude,\nThe Islamic Relief USA Team`
+                          }
                           noEmailTooltip={`No email on file for ${donor.name}.`}
                         />
                       )}

@@ -50,6 +50,7 @@ router.post("/follow-up-tasks", async (req, res): Promise<void> => {
     status: parsed.data.status ?? "not-started",
     dueDate: parsed.data.dueDate ?? null,
     notes: parsed.data.notes ?? null,
+    suggestedMessage: parsed.data.suggestedMessage ?? null,
   }).returning();
 
   res.status(201).json(serializeTask(task));
@@ -74,6 +75,7 @@ router.patch("/follow-up-tasks/:id", async (req, res): Promise<void> => {
   if (parsed.data.status !== undefined) updateData.status = parsed.data.status;
   if ("dueDate" in parsed.data) updateData.dueDate = parsed.data.dueDate;
   if ("notes" in parsed.data) updateData.notes = parsed.data.notes;
+  if ("suggestedMessage" in parsed.data) updateData.suggestedMessage = parsed.data.suggestedMessage;
 
   const [task] = await db.update(followUpTasksTable).set(updateData).where(eq(followUpTasksTable.id, params.data.id)).returning();
   if (!task) {
@@ -188,6 +190,8 @@ router.post("/donors/generate-followups", async (_req, res): Promise<void> => {
       return existing.some(t => t.taskType === taskType && t.createdAt.getTime() >= lastDonationMs);
     };
 
+    const firstName = donor.name.split(/\s+/)[0] || donor.name;
+
     // 1) Thank-you for recent donation
     if (lastDonationMs != null && ageDays != null && ageDays <= 30 && !hasSinceLastDonation("thank-you-email")) {
       tasksToCreate.push({
@@ -199,6 +203,14 @@ router.post("/donors/generate-followups", async (_req, res): Promise<void> => {
         status: "not-started",
         dueDate,
         notes: `Last donation: ${donor.lastDonationDate} ($${donor.averageDonation} avg, $${donor.totalDonated} lifetime)`,
+        suggestedMessage:
+          `Dear ${firstName},\n\n` +
+          `Thank you so much for your recent gift on ${donor.lastDonationDate}. Your generosity ` +
+          `directly supports the families and communities Islamic Relief USA serves every day.\n\n` +
+          `Across your ${donor.donationCount} ${donor.donationCount === 1 ? "gift" : "gifts"} totaling ` +
+          `$${donor.totalDonated}, you've helped fund the relief, education, and emergency response work ` +
+          `that defines our mission. We are truly grateful to have you with us.\n\n` +
+          `With gratitude,\nThe Islamic Relief USA Team`,
       });
     }
 
@@ -213,6 +225,14 @@ router.post("/donors/generate-followups", async (_req, res): Promise<void> => {
         status: "not-started",
         dueDate,
         notes: `Lapsed donor — last donation ${donor.lastDonationDate ?? "unknown"}. Lifetime $${donor.totalDonated} across ${donor.donationCount} gifts.`,
+        suggestedMessage:
+          `Dear ${firstName},\n\n` +
+          `It has been a while since we last heard from you${donor.lastDonationDate ? ` — your most recent gift was on ${donor.lastDonationDate}` : ""}, ` +
+          `and we wanted to reach out personally. Your past support of $${donor.totalDonated} across ${donor.donationCount} ` +
+          `${donor.donationCount === 1 ? "gift" : "gifts"} has had a lasting impact on the families we serve.\n\n` +
+          `We'd love to share what's been happening since then and learn whether there's a cause close to your heart ` +
+          `that we can connect you with today. Even a small gift can help us continue this work.\n\n` +
+          `With appreciation,\nThe Islamic Relief USA Team`,
       });
     }
 
@@ -227,6 +247,14 @@ router.post("/donors/generate-followups", async (_req, res): Promise<void> => {
         status: "not-started",
         dueDate,
         notes: `Major donor — $${donor.totalDonated} lifetime, last donation ${ageDays} days ago.`,
+        suggestedMessage:
+          `Dear ${firstName},\n\n` +
+          `As one of our most generous supporters — with $${donor.totalDonated} contributed across ${donor.donationCount} ` +
+          `${donor.donationCount === 1 ? "gift" : "gifts"} — your partnership means a great deal to all of us at Islamic Relief USA. ` +
+          `It's been about ${ageDays} days since your last gift, and I wanted to reach out personally rather than send a routine update.\n\n` +
+          `I'd welcome the chance for a brief call in the coming weeks to share where your support is making the biggest difference ` +
+          `right now and to hear what matters most to you. Please let me know a time that works.\n\n` +
+          `With deep gratitude,\nThe Islamic Relief USA Team`,
       });
     }
 
@@ -241,6 +269,14 @@ router.post("/donors/generate-followups", async (_req, res): Promise<void> => {
         status: "not-started",
         dueDate,
         notes: `Recurring donor at $${donor.averageDonation} avg, ${donor.donationCount} gifts. Hasn't given in ${ageDays} days — invite them to step up.`,
+        suggestedMessage:
+          `Dear ${firstName},\n\n` +
+          `Thank you for being one of our most consistent supporters — your ${donor.donationCount} gifts averaging ` +
+          `$${donor.averageDonation} have added up to $${donor.totalDonated} of real, sustained impact. ` +
+          `It's been about ${ageDays} days since your last contribution, and we wanted to check in.\n\n` +
+          `If you're in a position to step up your support, even a modest increase to your usual gift would help us reach ` +
+          `more families this season. Whatever you choose, we're grateful to have you on this journey with us.\n\n` +
+          `With gratitude,\nThe Islamic Relief USA Team`,
       });
     }
   }

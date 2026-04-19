@@ -479,6 +479,8 @@ export interface FollowUpTask {
   dueDate?: string | null;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  suggestedMessage?: string | null;
   createdAt: string;
 }
 
@@ -496,6 +498,8 @@ export interface CreateFollowUpTaskBody {
   dueDate?: string | null;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  suggestedMessage?: string | null;
 }
 
 export interface UpdateFollowUpTaskBody {

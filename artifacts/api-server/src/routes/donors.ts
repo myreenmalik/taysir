@@ -287,7 +287,14 @@ function generateRecommendations(
       urgency: "medium",
       tone: "direct",
       suggestedSubject: "You've made this possible — one more step?",
-      suggestedMessage: null,
+      suggestedMessage:
+        `Dear ${donor.name},\n\n` +
+        `Thanks to supporters like you — ${donor.donationCount} gifts and counting, totaling $${donor.totalDonated} — ` +
+        `Islamic Relief USA is able to keep responding where the need is greatest. ` +
+        (topCauses[0] ? `Your support of ${topCauses[0]} in particular has made a real difference.\n\n` : `\n`) +
+        `We have a timely campaign underway and wanted to invite you personally to be part of it. ` +
+        `Even a gift in line with your usual support would help us reach the next family in need.\n\n` +
+        `With gratitude,\nThe Islamic Relief USA Team`,
     });
   }
 
@@ -312,8 +319,16 @@ function generateRecommendations(
       reason: "This donor has not historically given during Ramadan. Focus outreach on other seasons.",
       urgency: "low",
       tone: "informational",
-      suggestedSubject: null,
-      suggestedMessage: null,
+      suggestedSubject: `Thinking of you${topCauses[0] ? ` — an update on ${topCauses[0]}` : ""}`,
+      suggestedMessage:
+        `Dear ${donor.name},\n\n` +
+        `We noticed your generosity tends to come outside of our Ramadan appeals — and we wanted to honor that ` +
+        `by reaching out at a time that's more meaningful to you. ` +
+        (topCauses[0]
+          ? `Your support of ${topCauses[0]} has been especially impactful, and we'd love to share a recent update from that work.\n\n`
+          : `Your past support has continued to make a real difference, and we'd love to share where it's gone most recently.\n\n`) +
+        `If there's a cause or season that resonates more with you, please let us know — we'll make sure our outreach matches.\n\n` +
+        `With appreciation,\nThe Islamic Relief USA Team`,
     });
   }
 
@@ -326,7 +341,14 @@ function generateRecommendations(
       urgency: "high",
       tone: "personal",
       suggestedSubject: "An invitation to connect",
-      suggestedMessage: null,
+      suggestedMessage:
+        `Dear ${donor.name},\n\n` +
+        `As one of Islamic Relief USA's most generous partners — with $${donor.totalDonated} contributed across ${donor.donationCount} ` +
+        `${donor.donationCount === 1 ? "gift" : "gifts"}${topCauses[0] ? `, much of it supporting ${topCauses[0]}` : ""} — ` +
+        `your relationship with this work matters to us beyond any single appeal.\n\n` +
+        `I'd love to find time for a brief call in the coming weeks. I'd like to share where your support is making the most ` +
+        `tangible difference right now and hear directly what's most important to you.\n\n` +
+        `Please let me know a time that works for you.\n\nWith gratitude,\nThe Islamic Relief USA Team`,
     });
   }
 

@@ -1006,6 +1006,7 @@ export const ListFollowUpTasksResponseItem = zod.object({
   status: zod.string(),
   dueDate: zod.string().nullish(),
   notes: zod.string().nullish(),
+  suggestedMessage: zod.string().nullish(),
   createdAt: zod.string(),
 });
 export const ListFollowUpTasksResponse = zod.array(
@@ -1026,6 +1027,7 @@ export const CreateFollowUpTaskBody = zod.object({
   status: zod.string().default(createFollowUpTaskBodyStatusDefault),
   dueDate: zod.string().nullish(),
   notes: zod.string().nullish(),
+  suggestedMessage: zod.string().nullish(),
 });
 
 /**
@@ -1053,6 +1055,7 @@ export const UpdateFollowUpTaskResponse = zod.object({
   status: zod.string(),
   dueDate: zod.string().nullish(),
   notes: zod.string().nullish(),
+  suggestedMessage: zod.string().nullish(),
   createdAt: zod.string(),
 });
 
@@ -1073,6 +1076,7 @@ export const GenerateEventFollowUpsResponseItem = zod.object({
   status: zod.string(),
   dueDate: zod.string().nullish(),
   notes: zod.string().nullish(),
+  suggestedMessage: zod.string().nullish(),
   createdAt: zod.string(),
 });
 export const GenerateEventFollowUpsResponse = zod.array(
@@ -1096,6 +1100,7 @@ export const GenerateDonorFollowUpsResponse = zod.object({
       status: zod.string(),
       dueDate: zod.string().nullish(),
       notes: zod.string().nullish(),
+      suggestedMessage: zod.string().nullish(),
       createdAt: zod.string(),
     }),
   ),

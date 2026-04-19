@@ -12,6 +12,7 @@ export const followUpTasksTable = pgTable("follow_up_tasks", {
   status: text("status").notNull().default("not-started"),
   dueDate: text("due_date"),
   notes: text("notes"),
+  suggestedMessage: text("suggested_message"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

@@ -1895,6 +1895,8 @@ components:
           type: ["string", "null"]
         notes:
           type: ["string", "null"]
+        suggestedMessage:
+          type: ["string", "null"]
         createdAt:
           type: string
       required:
@@ -1923,6 +1925,8 @@ components:
         dueDate:
           type: ["string", "null"]
         notes:
+          type: ["string", "null"]
+        suggestedMessage:
           type: ["string", "null"]
       required:
         - taskType
