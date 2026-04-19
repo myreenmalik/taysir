@@ -47,6 +47,23 @@ const TARGET_SCHEMA = {
     { key: "date", label: "Date", required: false, type: "date" },
     { key: "notes", label: "Notes", required: false, type: "string" },
   ],
+  logistics: [
+    { key: "eventName", label: "Linked Event Name", required: true, type: "string" },
+    { key: "taskName", label: "Task Name", required: true, type: "string" },
+    { key: "assignedTo", label: "Assigned To", required: false, type: "string" },
+    { key: "dueDate", label: "Due Date", required: false, type: "date" },
+    { key: "status", label: "Status", required: false, type: "string" },
+    { key: "notes", label: "Notes", required: false, type: "string" },
+  ],
+  followups: [
+    { key: "taskType", label: "Task Type", required: true, type: "string" },
+    { key: "recommendedAction", label: "Recommended Action", required: true, type: "string" },
+    { key: "donorName", label: "Linked Donor Name", required: false, type: "string" },
+    { key: "eventName", label: "Linked Event Name", required: false, type: "string" },
+    { key: "status", label: "Status", required: false, type: "string" },
+    { key: "dueDate", label: "Due Date", required: false, type: "date" },
+    { key: "notes", label: "Notes", required: false, type: "string" },
+  ],
 } as const;
 
 type Entity = keyof typeof TARGET_SCHEMA;
@@ -97,7 +114,7 @@ router.post("/import/analyze-sheet", async (req: Request, res: Response) => {
 
   const prompt = `You are analyzing a fundraising spreadsheet uploaded by an Islamic Relief USA staff member. Your job is two things at once:
 
-A) DETECT which entity types (donors, donations, events, revenue) are present in this sheet, and roughly how many rows of each. "revenue" means non-donation event revenue (sponsorships, ticket sales, etc.) tied to an event by name.
+A) DETECT which entity types (donors, donations, events, revenue, logistics, followups) are present in this sheet, and roughly how many rows of each. "revenue" means non-donation event revenue (sponsorships, ticket sales, etc.) tied to an event. "logistics" are tasks/checklist items tied to an event (setup, catering, AV). "followups" are donor or attendee outreach tasks (call, thank-you, meeting).
 
 B) For each spreadsheet column, decide which target field it maps to in our schema (an entity + field combo, or null if it's junk/unmappable).
 
@@ -121,10 +138,10 @@ Rules:
 Respond with strict JSON in this exact shape:
 {
   "entitiesPresent": [
-    { "entity": "donors" | "donations" | "events" | "revenue", "estimatedCount": number, "confidence": "high"|"medium"|"low", "reason": "<short>" }
+    { "entity": "donors"|"donations"|"events"|"revenue"|"logistics"|"followups", "estimatedCount": number, "confidence": "high"|"medium"|"low", "reason": "<short>" }
   ],
   "mapping": {
-    "<column header>": { "entity": "donors"|"donations"|"events"|"revenue", "field": "<field key>", "confidence": "high"|"medium"|"low", "reason": "<short>" } OR null
+    "<column header>": { "entity": "donors"|"donations"|"events"|"revenue"|"logistics"|"followups", "field": "<field key>", "confidence": "high"|"medium"|"low", "reason": "<short>" } OR null
   },
   "notes": "<one short sentence about anything ambiguous>"
 }`;

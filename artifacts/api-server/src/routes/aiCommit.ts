@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { eq, sql } from "drizzle-orm";
-import { db, donorsTable, donationsTable, eventsTable, revenueEntriesTable } from "@workspace/db";
+import { db, donorsTable, donationsTable, eventsTable, revenueEntriesTable, logisticsTasksTable, followUpTasksTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -74,12 +74,16 @@ router.post("/import/ai-commit", async (req: Request, res: Response) => {
     donors?: AnyRow[];
     events?: AnyRow[];
     revenue?: AnyRow[];
+    logistics?: AnyRow[];
+    followups?: AnyRow[];
     donorActions?: DonorAction[];
   };
   const donors = Array.isArray(body.donors) ? body.donors : [];
   const events = Array.isArray(body.events) ? body.events : [];
   const revenue = Array.isArray(body.revenue) ? body.revenue : [];
-  const totalRowCount = donors.length + events.length + revenue.length;
+  const logistics = Array.isArray(body.logistics) ? body.logistics : [];
+  const followups = Array.isArray(body.followups) ? body.followups : [];
+  const totalRowCount = donors.length + events.length + revenue.length + logistics.length + followups.length;
   if (totalRowCount > MAX_AI_COMMIT_ROWS) {
     res.status(413).json({ error: `Too many rows (${totalRowCount}). Max ${MAX_AI_COMMIT_ROWS}.` });
     return;
@@ -92,6 +96,8 @@ router.post("/import/ai-commit", async (req: Request, res: Response) => {
   const donorResults: Array<{ index: number; status: "imported" | "merged" | "skipped" | "failed"; donorId: number | null; donationId: number | null; reason: string | null }> = [];
   const eventResults: Array<{ index: number; status: "imported" | "failed"; eventId: number | null; reason: string | null }> = [];
   const revenueResults: Array<{ index: number; status: "imported" | "skipped" | "failed"; revenueId: number | null; reason: string | null }> = [];
+  const logisticsResults: Array<{ index: number; status: "imported" | "skipped" | "failed"; taskId: number | null; reason: string | null }> = [];
+  const followupResults: Array<{ index: number; status: "imported" | "failed"; taskId: number | null; reason: string | null }> = [];
   const affectedDonors = new Set<number>();
 
   // 1) EVENTS first (so revenue can match by name)
@@ -250,6 +256,82 @@ router.post("/import/ai-commit", async (req: Request, res: Response) => {
     }
   }
 
+  // 4) LOGISTICS (require linked event by name)
+  for (let i = 0; i < logistics.length; i++) {
+    const row = logistics[i];
+    try {
+      const taskName = trimOrNull(row.taskName);
+      const eventName = trimOrNull(row.eventName);
+      if (!taskName || !eventName) {
+        logisticsResults.push({ index: i, status: "failed", taskId: null, reason: "Missing required taskName or eventName" });
+        continue;
+      }
+      let eventId = eventIdByName.get(eventName.toLowerCase()) ?? null;
+      if (eventId == null) {
+        const m = await db.select({ id: eventsTable.id }).from(eventsTable).where(sql`lower(${eventsTable.name}) = ${eventName.toLowerCase()}`);
+        eventId = m[0]?.id ?? null;
+      }
+      if (eventId == null) {
+        logisticsResults.push({ index: i, status: "skipped", taskId: null, reason: `No event matched "${eventName}"` });
+        continue;
+      }
+      const [created] = await db.insert(logisticsTasksTable).values({
+        eventId,
+        taskName,
+        assignedTo: trimOrNull(row.assignedTo),
+        dueDate: normalizeDate(row.dueDate),
+        status: trimOrNull(row.status) ?? "pending",
+        notes: trimOrNull(row.notes),
+      }).returning();
+      logisticsResults.push({ index: i, status: "imported", taskId: created.id, reason: null });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown";
+      logisticsResults.push({ index: i, status: "failed", taskId: null, reason: msg });
+    }
+  }
+
+  // 5) FOLLOWUPS (optionally link to event/donor by name)
+  for (let i = 0; i < followups.length; i++) {
+    const row = followups[i];
+    try {
+      const taskType = trimOrNull(row.taskType);
+      const recommendedAction = trimOrNull(row.recommendedAction);
+      if (!taskType || !recommendedAction) {
+        followupResults.push({ index: i, status: "failed", taskId: null, reason: "Missing required taskType or recommendedAction" });
+        continue;
+      }
+      const eventName = trimOrNull(row.eventName);
+      let eventId: number | null = null;
+      if (eventName) {
+        eventId = eventIdByName.get(eventName.toLowerCase()) ?? null;
+        if (eventId == null) {
+          const m = await db.select({ id: eventsTable.id }).from(eventsTable).where(sql`lower(${eventsTable.name}) = ${eventName.toLowerCase()}`);
+          eventId = m[0]?.id ?? null;
+        }
+      }
+      const donorName = trimOrNull(row.donorName);
+      let donorId: number | null = null;
+      if (donorName) {
+        const m = await db.select({ id: donorsTable.id }).from(donorsTable).where(sql`lower(${donorsTable.name}) = ${donorName.toLowerCase()}`);
+        donorId = m[0]?.id ?? null;
+      }
+      const [created] = await db.insert(followUpTasksTable).values({
+        eventId,
+        attendeeId: null,
+        donorId,
+        taskType,
+        recommendedAction,
+        status: trimOrNull(row.status) ?? "not-started",
+        dueDate: normalizeDate(row.dueDate),
+        notes: trimOrNull(row.notes),
+      }).returning();
+      followupResults.push({ index: i, status: "imported", taskId: created.id, reason: null });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown";
+      followupResults.push({ index: i, status: "failed", taskId: null, reason: msg });
+    }
+  }
+
   for (const donorId of affectedDonors) {
     try { await recomputeDonorStats(donorId); } catch (err) {
       req.log.error({ err, donorId }, "Failed to recompute donor stats");
@@ -267,10 +349,17 @@ router.post("/import/ai-commit", async (req: Request, res: Response) => {
       revenueImported: revenueResults.filter(r => r.status === "imported").length,
       revenueSkipped: revenueResults.filter(r => r.status === "skipped").length,
       revenueFailed: revenueResults.filter(r => r.status === "failed").length,
+      logisticsImported: logisticsResults.filter(r => r.status === "imported").length,
+      logisticsSkipped: logisticsResults.filter(r => r.status === "skipped").length,
+      logisticsFailed: logisticsResults.filter(r => r.status === "failed").length,
+      followupsImported: followupResults.filter(r => r.status === "imported").length,
+      followupsFailed: followupResults.filter(r => r.status === "failed").length,
     },
     donorResults,
     eventResults,
     revenueResults,
+    logisticsResults,
+    followupResults,
   });
 });
 

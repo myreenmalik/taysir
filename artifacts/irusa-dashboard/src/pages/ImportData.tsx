@@ -11,7 +11,7 @@ import { Upload, AlertCircle, CheckCircle2, RotateCcw, Sparkles, Trash2 } from "
 
 const API_BASE = `${import.meta.env.BASE_URL}api`.replace(/\/+/g, "/");
 
-type Entity = "donors" | "donations" | "events" | "revenue";
+type Entity = "donors" | "donations" | "events" | "revenue" | "logistics" | "followups";
 
 type FieldDef = { key: string; label: string; required: boolean; type: string };
 
@@ -53,9 +53,11 @@ const ENTITY_LABEL: Record<Entity, string> = {
   donations: "Donations",
   events: "Events",
   revenue: "Event Revenue",
+  logistics: "Logistics Tasks",
+  followups: "Follow-Up Tasks",
 };
 
-const ENTITY_ORDER: Entity[] = ["donors", "donations", "events", "revenue"];
+const ENTITY_ORDER: Entity[] = ["donors", "donations", "events", "revenue", "logistics", "followups"];
 
 function normHeader(h: string) { return h.trim().toLowerCase().replace(/\s+/g, " "); }
 
@@ -364,15 +366,17 @@ export default function ImportData() {
   }, [mapping, selectedEntities, analyze]);
 
   // Build per-entity record arrays from the mapped rows.
-  function buildEntityRecords(): { donors: Record<string, unknown>[]; events: Record<string, unknown>[]; revenue: Record<string, unknown>[] } {
+  function buildEntityRecords(): { donors: Record<string, unknown>[]; events: Record<string, unknown>[]; revenue: Record<string, unknown>[]; logistics: Record<string, unknown>[]; followups: Record<string, unknown>[] } {
     const donors: Record<string, unknown>[] = [];
     const events: Record<string, unknown>[] = [];
-    if (!parsedFile) return { donors, events, revenue: [] as Record<string, unknown>[] };
+    if (!parsedFile) return { donors, events, revenue: [], logistics: [], followups: [] };
 
     // Group columns by entity.
-    const colsByEntity: Record<Entity, { header: string; field: string }[]> = { donors: [], donations: [], events: [], revenue: [] };
-    const notesCols: Record<Entity, string[]> = { donors: [], donations: [], events: [], revenue: [] };
+    const colsByEntity: Record<Entity, { header: string; field: string }[]> = { donors: [], donations: [], events: [], revenue: [], logistics: [], followups: [] };
+    const notesCols: Record<Entity, string[]> = { donors: [], donations: [], events: [], revenue: [], logistics: [], followups: [] };
     const revenue: Record<string, unknown>[] = [];
+    const logistics: Record<string, unknown>[] = [];
+    const followups: Record<string, unknown>[] = [];
     const combineCols: { header: string; entity: Entity; field: string; with: string[]; separator: string }[] = [];
     const splitCols: { header: string; entity: Entity; targets: { field: string }[]; separator: string }[] = [];
 
@@ -481,7 +485,47 @@ export default function ImportData() {
       }
     }
 
-    return { donors, events, revenue };
+    // Build logistics records (one per row) when logistics entity selected.
+    if (selectedEntities.has("logistics")) {
+      for (const row of parsedFile.rows) {
+        const rec: Record<string, unknown> = {};
+        for (const c of colsByEntity.logistics) rec[c.field] = row[c.header];
+        const noteParts: string[] = [];
+        for (const h of notesCols.logistics) {
+          const v = row[h]; if (v != null && String(v).trim() !== "") noteParts.push(`${h}: ${String(v).trim()}`);
+        }
+        const existingNotes = rec.notes ? String(rec.notes).trim() : "";
+        rec.notes = [existingNotes, noteParts.join(" | ")].filter(Boolean).join(" | ") || null;
+        for (const cc of combineCols.filter(c => c.entity === "logistics")) {
+          const parts = [cc.header, ...cc.with].map(h => row[h]).filter(v => v != null && String(v).trim() !== "").map(v => String(v).trim());
+          if (parts.length > 0) rec[cc.field] = parts.join(cc.separator);
+        }
+        applySplit(row, rec, "logistics");
+        if (rec.taskName && String(rec.taskName).trim()) logistics.push(rec);
+      }
+    }
+
+    // Build followup records (one per row) when followups entity selected.
+    if (selectedEntities.has("followups")) {
+      for (const row of parsedFile.rows) {
+        const rec: Record<string, unknown> = {};
+        for (const c of colsByEntity.followups) rec[c.field] = row[c.header];
+        const noteParts: string[] = [];
+        for (const h of notesCols.followups) {
+          const v = row[h]; if (v != null && String(v).trim() !== "") noteParts.push(`${h}: ${String(v).trim()}`);
+        }
+        const existingNotes = rec.notes ? String(rec.notes).trim() : "";
+        rec.notes = [existingNotes, noteParts.join(" | ")].filter(Boolean).join(" | ") || null;
+        for (const cc of combineCols.filter(c => c.entity === "followups")) {
+          const parts = [cc.header, ...cc.with].map(h => row[h]).filter(v => v != null && String(v).trim() !== "").map(v => String(v).trim());
+          if (parts.length > 0) rec[cc.field] = parts.join(cc.separator);
+        }
+        applySplit(row, rec, "followups");
+        if (rec.taskType && String(rec.taskType).trim() && rec.recommendedAction && String(rec.recommendedAction).trim()) followups.push(rec);
+      }
+    }
+
+    return { donors, events, revenue, logistics, followups };
   }
 
   const proceedToReview = async () => {
@@ -534,12 +578,12 @@ export default function ImportData() {
     setCommitting(true);
     setCommitError(null);
     try {
-      const { donors, events, revenue } = buildEntityRecords();
+      const { donors, events, revenue, logistics, followups } = buildEntityRecords();
       const donorActionsArr = Object.entries(donorActions).map(([idx, a]) => ({ index: parseInt(idx, 10), action: a.action, mergeWith: a.mergeWith }));
       const res = await fetch(`${API_BASE}/import/ai-commit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ donors, events, revenue, donorActions: donorActionsArr }),
+        body: JSON.stringify({ donors, events, revenue, logistics, followups, donorActions: donorActionsArr }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -995,9 +1039,11 @@ export default function ImportData() {
                     {parsedFile.rows.length} row{parsedFile.rows.length === 1 ? "" : "s"} ready ·{" "}
                     {builtRecords.donors.length} donor{builtRecords.donors.length === 1 ? "" : "s"},{" "}
                     {builtRecords.events.length} event{builtRecords.events.length === 1 ? "" : "s"},{" "}
-                    {builtRecords.revenue.length} revenue entr{builtRecords.revenue.length === 1 ? "y" : "ies"} will be created
+                    {builtRecords.revenue.length} revenue entr{builtRecords.revenue.length === 1 ? "y" : "ies"},{" "}
+                    {builtRecords.logistics.length} logistics task{builtRecords.logistics.length === 1 ? "" : "s"},{" "}
+                    {builtRecords.followups.length} follow-up{builtRecords.followups.length === 1 ? "" : "s"} will be created
                   </div>
-                  <Button onClick={proceedToReview} disabled={requiredMissing.length > 0 || (builtRecords.donors.length === 0 && builtRecords.events.length === 0 && builtRecords.revenue.length === 0)}>
+                  <Button onClick={proceedToReview} disabled={requiredMissing.length > 0 || (builtRecords.donors.length === 0 && builtRecords.events.length === 0 && builtRecords.revenue.length === 0 && builtRecords.logistics.length === 0 && builtRecords.followups.length === 0)}>
                     Continue to review
                   </Button>
                 </div>
