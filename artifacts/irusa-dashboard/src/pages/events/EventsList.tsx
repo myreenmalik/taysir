@@ -1,4 +1,5 @@
-import { useListEvents, getListEventsQueryKey } from "@workspace/api-client-react";
+import { useListEvents, getListEventsQueryKey, useDeleteEvent } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -6,9 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Link } from "wouter";
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const STATUS_OPTIONS = ["planned", "upcoming", "completed", "reconciled", "closed"] as const;
 const EVENT_TYPE_OPTIONS = ["dinner", "gala", "community", "outreach", "zakat"] as const;
@@ -34,6 +46,33 @@ const initialFilters = {
 export default function EventsList() {
   const [filters, setFilters] = useState(initialFilters);
   const { data: events, isLoading } = useListEvents({}, { query: { queryKey: getListEventsQueryKey() } });
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const deleteEventMutation = useDeleteEvent();
+  const [eventToDelete, setEventToDelete] = useState<{ id: number; name: string } | null>(null);
+
+  const confirmDeleteEvent = () => {
+    if (!eventToDelete) return;
+    const { id, name } = eventToDelete;
+    deleteEventMutation.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          toast({ title: "Event deleted", description: `${name} and its related records were removed.` });
+          setEventToDelete(null);
+          void queryClient.invalidateQueries({ queryKey: getListEventsQueryKey() });
+          void queryClient.invalidateQueries();
+        },
+        onError: (err) => {
+          toast({
+            title: "Couldn't delete event",
+            description: err instanceof Error ? err.message : "Unknown error",
+            variant: "destructive",
+          });
+        },
+      },
+    );
+  };
 
   const updateFilter = <K extends keyof typeof filters>(key: K, value: (typeof filters)[K]) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -245,12 +284,13 @@ export default function EventsList() {
                     <TableHead>Location</TableHead>
                     <TableHead className="text-right">Attendees</TableHead>
                     <TableHead className="text-right">Raised</TableHead>
+                    <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredEvents?.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                         {filtersActive ? "No events match your filters" : "No events found"}
                       </TableCell>
                     </TableRow>
@@ -276,6 +316,22 @@ export default function EventsList() {
                         <TableCell className="text-right tabular-nums" data-testid={`event-raised-${event.id}`}>
                           {currencyFormatter.format(event.totalRaised ?? 0)}
                         </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setEventToDelete({ id: event.id, name: event.name });
+                            }}
+                            aria-label={`Delete ${event.name}`}
+                            data-testid={`button-delete-event-${event.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -285,6 +341,28 @@ export default function EventsList() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={eventToDelete !== null} onOpenChange={(open) => { if (!open) setEventToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <span className="font-semibold">{eventToDelete?.name}</span> along with its attendees, donations, logistics tasks, revenue entries, fund allocations, and reconciliation record. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteEventMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmDeleteEvent(); }}
+              disabled={deleteEventMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete-event"
+            >
+              {deleteEventMutation.isPending ? "Deleting…" : "Delete event"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

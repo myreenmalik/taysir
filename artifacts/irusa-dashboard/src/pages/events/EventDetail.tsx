@@ -1,4 +1,5 @@
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
 import { 
   useGetEvent, 
   useGetEventSummary, 
@@ -9,7 +10,9 @@ import {
   useListAttendees,
   useListFollowUpTasks,
   useListDonors,
+  useDeleteEvent,
   getListDonorsQueryKey,
+  getListEventsQueryKey,
   getGetEventQueryKey, 
   getGetEventSummaryQueryKey,
   getListLogisticsTasksQueryKey,
@@ -26,13 +29,30 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Calendar, Users, DollarSign, Target, CheckCircle2, AlertCircle, Clock, PieChart, Info, Search } from "lucide-react";
+import { MapPin, Calendar, Users, DollarSign, Target, CheckCircle2, AlertCircle, Clock, PieChart, Info, Search, Trash2 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { SendEmailButton, deriveEmailSubject } from "@/components/SendEmailButton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
   const eventId = parseInt(id || "0", 10);
+
+  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const deleteEventMutation = useDeleteEvent();
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const [attendeeSearch, setAttendeeSearch] = useState("");
   const [attendeeTypeFilter, setAttendeeTypeFilter] = useState("all");
@@ -91,6 +111,29 @@ export default function EventDetail() {
     return <div className="p-8 text-center text-destructive">Event not found</div>;
   }
 
+  const handleDelete = () => {
+    const name = event.name;
+    deleteEventMutation.mutate(
+      { id: eventId },
+      {
+        onSuccess: () => {
+          toast({ title: "Event deleted", description: `${name} and its related records were removed.` });
+          setConfirmOpen(false);
+          void queryClient.invalidateQueries({ queryKey: getListEventsQueryKey() });
+          void queryClient.invalidateQueries();
+          setLocation("/events");
+        },
+        onError: (err) => {
+          toast({
+            title: "Couldn't delete event",
+            description: err instanceof Error ? err.message : "Unknown error",
+            variant: "destructive",
+          });
+        },
+      },
+    );
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "planned": return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
@@ -127,6 +170,17 @@ export default function EventDetail() {
               </div>
             )}
           </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setConfirmOpen(true)}
+            className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+            data-testid="button-delete-event"
+          >
+            <Trash2 className="h-4 w-4" /> Delete event
+          </Button>
         </div>
       </div>
 
@@ -535,6 +589,28 @@ export default function EventDetail() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <span className="font-semibold">{event.name}</span> along with its attendees, donations, logistics tasks, revenue entries, fund allocations, and reconciliation record. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteEventMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDelete(); }}
+              disabled={deleteEventMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete-event"
+            >
+              {deleteEventMutation.isPending ? "Deleting…" : "Delete event"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

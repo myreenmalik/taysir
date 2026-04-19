@@ -2760,6 +2760,90 @@ export const useUpdateDonor = <
 };
 
 /**
+ * @summary Delete donor
+ */
+export const getDeleteDonorUrl = (id: number) => {
+  return `/api/donors/${id}`;
+};
+
+export const deleteDonor = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteDonorUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteDonorMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteDonor>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteDonor>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteDonor"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteDonor>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteDonor(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteDonorMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteDonor>>
+>;
+
+export type DeleteDonorMutationError = ErrorType<void>;
+
+/**
+ * @summary Delete donor
+ */
+export const useDeleteDonor = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteDonor>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteDonor>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteDonorMutationOptions(options));
+};
+
+/**
  * @summary Get full donor profile with insights, donations, and events attended
  */
 export const getGetDonorProfileUrl = (id: number) => {

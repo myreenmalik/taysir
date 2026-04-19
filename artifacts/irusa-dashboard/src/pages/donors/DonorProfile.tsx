@@ -1,12 +1,24 @@
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { useGetDonorProfile, getGetDonorProfileQueryKey, useListFollowUpTasks, getListFollowUpTasksQueryKey, useUpdateFollowUpTask } from "@workspace/api-client-react";
+import { useGetDonorProfile, getGetDonorProfileQueryKey, useListFollowUpTasks, getListFollowUpTasksQueryKey, useUpdateFollowUpTask, useDeleteDonor, getListDonorsQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Mail, Phone, MapPin, Calendar, AlertTriangle, Sparkles, ListChecks, Check } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Mail, Phone, MapPin, Calendar, AlertTriangle, Sparkles, ListChecks, Check, Trash2 } from "lucide-react";
 import { SendEmailButton, deriveEmailSubject } from "@/components/SendEmailButton";
 import { getTierColor } from "./DonorsList";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 const OUTREACH_TASK_TYPES = new Set(["thank-you-email", "donation-ask", "volunteer-invite", "stewardship-call"]);
 
@@ -15,10 +27,38 @@ export default function DonorProfile() {
   const donorId = parseInt(id || "0", 10);
 
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const { data: profile, isLoading } = useGetDonorProfile(donorId, { query: { enabled: !!donorId, queryKey: getGetDonorProfileQueryKey(donorId) } });
   const { data: followUps } = useListFollowUpTasks({ donorId }, { query: { enabled: !!donorId, queryKey: getListFollowUpTasksQueryKey({ donorId }) } });
   const updateTask = useUpdateFollowUpTask();
+  const deleteDonorMutation = useDeleteDonor();
   const openTasks = (followUps ?? []).filter(t => t.status !== "completed");
+
+  const handleDelete = () => {
+    if (!profile) return;
+    const name = profile.donor.name;
+    deleteDonorMutation.mutate(
+      { id: donorId },
+      {
+        onSuccess: () => {
+          toast({ title: "Donor deleted", description: `${name} and their related records were removed.` });
+          setConfirmOpen(false);
+          void queryClient.invalidateQueries({ queryKey: getListDonorsQueryKey() });
+          void queryClient.invalidateQueries();
+          setLocation("/donors");
+        },
+        onError: (err) => {
+          toast({
+            title: "Couldn't delete donor",
+            description: err instanceof Error ? err.message : "Unknown error",
+            variant: "destructive",
+          });
+        },
+      },
+    );
+  };
 
   if (isLoading) {
     return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading donor profile...</div>;
@@ -64,7 +104,17 @@ export default function DonorProfile() {
               </div>
             </div>
             
-            <div className="flex flex-col gap-2 min-w-[200px] bg-muted/50 p-4 rounded-lg">
+            <div className="flex flex-col items-end gap-3 min-w-[200px]">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setConfirmOpen(true)}
+                className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                data-testid="button-delete-donor"
+              >
+                <Trash2 className="h-4 w-4" /> Delete donor
+              </Button>
+              <div className="w-full flex flex-col gap-2 bg-muted/50 p-4 rounded-lg">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Total Giving</span>
                 <span className="text-lg font-bold text-primary">${donor.totalDonated.toLocaleString()}</span>
@@ -77,10 +127,33 @@ export default function DonorProfile() {
                 <span className="text-sm text-muted-foreground">Donations</span>
                 <span className="text-sm font-medium">{donor.donationCount}</span>
               </div>
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this donor?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <span className="font-semibold">{donor.name}</span> along with all of their donations, event attendance records, and follow-up tasks. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteDonorMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDelete(); }}
+              disabled={deleteDonorMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete-donor"
+            >
+              {deleteDonorMutation.isPending ? "Deleting…" : "Delete donor"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">

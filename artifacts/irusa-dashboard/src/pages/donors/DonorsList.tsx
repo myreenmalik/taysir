@@ -1,4 +1,4 @@
-import { useListDonors, getListDonorsQueryKey, useGenerateDonorFollowUps } from "@workspace/api-client-react";
+import { useListDonors, getListDonorsQueryKey, useGenerateDonorFollowUps, useDeleteDonor } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,9 +9,19 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Link, useSearch, useLocation } from "wouter";
 import { useMemo, useCallback, useState } from "react";
-import { Search, ChevronDown, X, CalendarIcon, Sparkles } from "lucide-react";
+import { Search, ChevronDown, X, CalendarIcon, Sparkles, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -84,7 +94,32 @@ export default function DonorsList() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const generateFollowUps = useGenerateDonorFollowUps();
+  const deleteDonorMutation = useDeleteDonor();
   const [lastGenSummary, setLastGenSummary] = useState<{ created: number; byType: Record<string, number> } | null>(null);
+  const [donorToDelete, setDonorToDelete] = useState<{ id: number; name: string } | null>(null);
+
+  const confirmDeleteDonor = () => {
+    if (!donorToDelete) return;
+    const { id, name } = donorToDelete;
+    deleteDonorMutation.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          toast({ title: "Donor deleted", description: `${name} and their related records were removed.` });
+          setDonorToDelete(null);
+          void queryClient.invalidateQueries({ queryKey: getListDonorsQueryKey() });
+          void queryClient.invalidateQueries();
+        },
+        onError: (err) => {
+          toast({
+            title: "Couldn't delete donor",
+            description: err instanceof Error ? err.message : "Unknown error",
+            variant: "destructive",
+          });
+        },
+      },
+    );
+  };
 
   const handleGenerateFollowUps = () => {
     generateFollowUps.mutate(undefined, {
@@ -474,12 +509,13 @@ export default function DonorsList() {
                     <TableHead>Personality</TableHead>
                     <TableHead>Last Donation</TableHead>
                     <TableHead className="text-right">Total Donated</TableHead>
+                    <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredDonors?.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         {hasAnyFilter
                           ? "No donors match the selected filters."
                           : "No donors yet."}
@@ -515,6 +551,22 @@ export default function DonorsList() {
                         <TableCell className="text-right font-medium">
                           ${donor.totalDonated.toLocaleString()}
                         </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setDonorToDelete({ id: donor.id, name: donor.name });
+                            }}
+                            aria-label={`Delete ${donor.name}`}
+                            data-testid={`button-delete-donor-${donor.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -524,6 +576,28 @@ export default function DonorsList() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={donorToDelete !== null} onOpenChange={(open) => { if (!open) setDonorToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this donor?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <span className="font-semibold">{donorToDelete?.name}</span> along with all of their donations, event attendance records, and follow-up tasks. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteDonorMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmDeleteDonor(); }}
+              disabled={deleteDonorMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete-donor"
+            >
+              {deleteDonorMutation.isPending ? "Deleting…" : "Delete donor"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

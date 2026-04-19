@@ -801,6 +801,13 @@ export const UpdateDonorResponse = zod.object({
 });
 
 /**
+ * @summary Delete donor
+ */
+export const DeleteDonorParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
  * @summary Get full donor profile with insights, donations, and events attended
  */
 export const GetDonorProfileParams = zod.object({

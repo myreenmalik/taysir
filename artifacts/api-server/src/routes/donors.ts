@@ -1,12 +1,13 @@
 import { Router, type IRouter } from "express";
 import { eq, ilike, or } from "drizzle-orm";
-import { db, donorsTable, donationsTable, attendeesTable, eventsTable } from "@workspace/db";
+import { db, donorsTable, donationsTable, attendeesTable, eventsTable, followUpTasksTable } from "@workspace/db";
 import {
   ListDonorsQueryParams,
   CreateDonorBody,
   GetDonorParams,
   UpdateDonorParams,
   UpdateDonorBody,
+  DeleteDonorParams,
   GetDonorProfileParams,
   GetDonorRecommendationsParams,
 } from "@workspace/api-zod";
@@ -117,6 +118,34 @@ router.patch("/donors/:id", async (req, res): Promise<void> => {
   }
 
   res.json(serializeDonor(donor));
+});
+
+router.delete("/donors/:id", async (req, res): Promise<void> => {
+  const params = DeleteDonorParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const donorId = params.data.id;
+
+  const deleted = await db.transaction(async (tx) => {
+    const [existing] = await tx.select().from(donorsTable).where(eq(donorsTable.id, donorId));
+    if (!existing) return null;
+
+    await tx.delete(followUpTasksTable).where(eq(followUpTasksTable.donorId, donorId));
+    await tx.delete(donationsTable).where(eq(donationsTable.donorId, donorId));
+    await tx.delete(attendeesTable).where(eq(attendeesTable.donorId, donorId));
+    await tx.delete(donorsTable).where(eq(donorsTable.id, donorId));
+    return existing;
+  });
+
+  if (!deleted) {
+    res.status(404).json({ error: "Donor not found" });
+    return;
+  }
+
+  res.sendStatus(204);
 });
 
 router.get("/donors/:id/profile", async (req, res): Promise<void> => {

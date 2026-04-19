@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { eventsTable, logisticsTasksTable, revenueEntriesTable, frfRecordsTable, allocationsTable, attendeesTable, followUpTasksTable } from "@workspace/db";
+import { eventsTable, logisticsTasksTable, revenueEntriesTable, frfRecordsTable, allocationsTable, attendeesTable, followUpTasksTable, donationsTable } from "@workspace/db";
 import {
   ListEventsQueryParams,
   CreateEventBody,
@@ -166,8 +166,24 @@ router.delete("/events/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [event] = await db.delete(eventsTable).where(eq(eventsTable.id, params.data.id)).returning();
-  if (!event) {
+  const eventId = params.data.id;
+
+  const deleted = await db.transaction(async (tx) => {
+    const [existing] = await tx.select().from(eventsTable).where(eq(eventsTable.id, eventId));
+    if (!existing) return null;
+
+    await tx.delete(followUpTasksTable).where(eq(followUpTasksTable.eventId, eventId));
+    await tx.delete(donationsTable).where(eq(donationsTable.eventId, eventId));
+    await tx.delete(attendeesTable).where(eq(attendeesTable.eventId, eventId));
+    await tx.delete(logisticsTasksTable).where(eq(logisticsTasksTable.eventId, eventId));
+    await tx.delete(revenueEntriesTable).where(eq(revenueEntriesTable.eventId, eventId));
+    await tx.delete(allocationsTable).where(eq(allocationsTable.eventId, eventId));
+    await tx.delete(frfRecordsTable).where(eq(frfRecordsTable.eventId, eventId));
+    await tx.delete(eventsTable).where(eq(eventsTable.id, eventId));
+    return existing;
+  });
+
+  if (!deleted) {
     res.status(404).json({ error: "Event not found" });
     return;
   }
