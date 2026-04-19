@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Copy, Check, ExternalLink, RotateCcw } from "lucide-react";
+import { Mail, Copy, Check, RotateCcw } from "lucide-react";
 
 interface SendEmailButtonProps extends Omit<ButtonProps, "onClick"> {
   email: string | null | undefined;
@@ -162,7 +162,6 @@ export function SendEmailButton({
         originalBody={body}
         onSubjectChange={setEditedSubject}
         onBodyChange={setEditedBody}
-        onTryAgain={() => tryOpenMail()}
       />
     </>
   );
@@ -178,7 +177,6 @@ interface EmailFallbackDialogProps {
   originalBody: string;
   onSubjectChange: (v: string) => void;
   onBodyChange: (v: string) => void;
-  onTryAgain: () => void;
 }
 
 function EmailFallbackDialog({
@@ -191,7 +189,6 @@ function EmailFallbackDialog({
   originalBody,
   onSubjectChange,
   onBodyChange,
-  onTryAgain,
 }: EmailFallbackDialogProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState<"to" | "subject" | "body" | "all" | null>(null);
@@ -336,17 +333,6 @@ function EmailFallbackDialog({
                 <Copy className="h-4 w-4 mr-2" /> Copy all
               </>
             )}
-          </Button>
-          <Button
-            type="button"
-            onClick={() => {
-              onOpenChange(false);
-              onTryAgain();
-            }}
-            data-testid="button-try-mail-again"
-          >
-            <ExternalLink className="h-4 w-4 mr-2" />
-            Try opening email app again
           </Button>
         </DialogFooter>
       </DialogContent>
