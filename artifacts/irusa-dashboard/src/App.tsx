@@ -12,6 +12,7 @@ import DonorsList from "@/pages/donors/DonorsList";
 import DonorNew from "@/pages/donors/DonorNew";
 import DonorProfile from "@/pages/donors/DonorProfile";
 import Reports from "@/pages/Reports";
+import Tasks from "@/pages/Tasks";
 import ImportData from "@/pages/ImportData";
 import NotFound from "@/pages/not-found";
 
@@ -36,6 +37,7 @@ function Router() {
         <Route path="/donors/:id" component={DonorProfile} />
         <Route path="/donors" component={DonorsList} />
         <Route path="/reports" component={Reports} />
+        <Route path="/tasks" component={Tasks} />
         <Route path="/import" component={ImportData} />
         <Route component={NotFound} />
       </Switch>

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Calendar, Users, BarChart3, Upload } from "lucide-react";
+import { LayoutDashboard, Calendar, Users, BarChart3, Upload, ListChecks } from "lucide-react";
 
 export function Sidebar() {
   const [location] = useLocation();
@@ -8,6 +8,7 @@ export function Sidebar() {
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/events", label: "Events", icon: Calendar },
     { href: "/donors", label: "Donors", icon: Users },
+    { href: "/tasks", label: "Tasks", icon: ListChecks },
     { href: "/reports", label: "Reports", icon: BarChart3 },
     { href: "/import", label: "Import Data", icon: Upload },
   ];
