@@ -510,6 +510,8 @@ export interface UpdateFollowUpTaskBody {
   dueDate?: string | null;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  suggestedMessage?: string | null;
 }
 
 export type DonorTierStatTier =

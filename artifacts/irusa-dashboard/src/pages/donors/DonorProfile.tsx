@@ -183,7 +183,10 @@ export default function DonorProfile() {
                       <SendEmailButton
                         email={donor.email}
                         subject={rec.suggestedSubject || deriveEmailSubject(rec.action)}
-                        body={rec.suggestedMessage || rec.action}
+                        body={
+                          rec.suggestedMessage ||
+                          `Dear ${donor.name},\n\n${rec.action}.${rec.reason ? `\n\n${rec.reason}` : ""}\n\nWith gratitude,\nThe Islamic Relief USA Team`
+                        }
                         noEmailTooltip={`No email on file for ${donor.name}.`}
                       />
                     </div>

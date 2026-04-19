@@ -1043,6 +1043,7 @@ export const UpdateFollowUpTaskBody = zod.object({
   status: zod.string().optional(),
   dueDate: zod.string().nullish(),
   notes: zod.string().nullish(),
+  suggestedMessage: zod.string().nullish(),
 });
 
 export const UpdateFollowUpTaskResponse = zod.object({

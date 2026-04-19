@@ -1945,6 +1945,8 @@ components:
           type: ["string", "null"]
         notes:
           type: ["string", "null"]
+        suggestedMessage:
+          type: ["string", "null"]
 
     # ==================== DASHBOARD ====================
     DashboardSummary:
