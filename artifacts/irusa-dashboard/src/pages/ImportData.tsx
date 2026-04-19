@@ -147,11 +147,14 @@ function isValidDate(s: unknown): boolean {
 }
 
 function parseAmount(v: unknown): number | null {
-  if (typeof v === "number" && !Number.isNaN(v)) return v;
+  // Mirrors the strict server-side parser so a row marked valid in Review
+  // won't fail at import time for formatting reasons.
+  if (typeof v === "number" && Number.isFinite(v)) return v;
   if (typeof v === "string") {
     const cleaned = v.replace(/[$,\s]/g, "");
+    if (!/^-?\d+(\.\d+)?$/.test(cleaned)) return null;
     const n = parseFloat(cleaned);
-    if (!Number.isNaN(n)) return n;
+    return Number.isFinite(n) ? n : null;
   }
   return null;
 }
