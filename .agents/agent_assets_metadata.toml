@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "KJByfuuCZuXfpUBYGivWu"
+uri = "file://attached_assets/irusa_demo_messy_eid_2026.xlsx"
+type = "table"
+title = "IRUSA Demo — Messy Eid 2026 Workbook"
