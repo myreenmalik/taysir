@@ -1,0 +1,31 @@
+kind = "slides"
+previewPath = "/irusa-pitch/"
+title = "IRUSA Smart Dashboard — Pitch Deck"
+version = "1.0.0"
+id = "artifacts/irusa-pitch"
+router = "path"
+
+[[integratedSkills]]
+name = "slides"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/irusa-pitch/" ]
+localPort = 19801
+
+[services.development]
+run = "pnpm --filter @workspace/irusa-pitch run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/irusa-pitch", "run", "build" ]
+publicDir = "artifacts/irusa-pitch/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19801"
+BASE_PATH = "/irusa-pitch/"

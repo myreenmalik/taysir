@@ -1,5 +1,16 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "fcpLw0MDT23RB4Jd5NUGT"
+uri = "file://artifacts/irusa-pitch/public/hero-aid.png"
+type = "image"
+title = "humanitarian aid hero"
+
+[[generated]]
+id = "NfdrS8x-l7BO8UgYVn0QR"
+uri = "file://artifacts/irusa-pitch/public/community-dinner.png"
+type = "image"
+title = "community fundraising dinner"
 
 [[outputs]]
 id = "KJByfuuCZuXfpUBYGivWu"

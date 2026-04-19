@@ -1,0 +1,67 @@
+Title slide - wtv we want to name our thing
+Introduce IRUSA
+Have data visualizations and stats showing their reach
+Keep kind of short - just be like they have major humanitarian reach and manage a lot of events, donors, etc
+Start w problem
+Irusa manages seasonal events, frfs, donor follow up, masjid partnerships, etc across messy spreadsheets and manual workflows
+Should set up a framework that essentially says that irusa is such an impactful organization but has some organizational problems within it - this is bad bc they are spending time working on logistical stuff when they could be working on actually helping ppl (it also lowers their worker morale because it is unappetising for an irusa employee to not get paid enough to work so many hours just fixing systematical issues)
+too much operational complexity, not enough connected intelligence
+Define our product
+Name of product
+One sentence description
+Show breakdown - like list off the 4 parts
+Break down product into 4 parts - each breakdown can be one slide
+Part 1 - event operations
+Tracks full event lifecycle in one place
+event details
+logistics checklist
+attendance
+status tracking
+Part 2 - funding tracking + frf reconciliation
+replace manual spreadsheets with structured finance tracking 
+money raised by type
+FRF matching
+allocation tracking
+error flags
+Part 3 - donor intelligence
+help staff understand donor history and personalize follow-up
+donor profile and giving history
+event attendance tied to giving behavior
+segments and next-step recommendations
+Part 4 - masjid intelligence
+rank masjids by ROI, engagement, and campaign fit
+which masjids are easiest to work with
+which generate the most value
+which are best for specific causes
+How our product compares to the original spreadsheet method
+Like a competitive analysis chart - i have an example im trying to find that ill put in here
+centralized instead of scattered
+structured instead of manual
+intelligent instead of reactive
+actionable instead of just descriptive
+Demo part - will have it as a video
+Use one scenario - “irusa wants to run a lebanon campaign”
+Steps to show:
+create or open an event
+show attendance and donations
+show FRF reconciliation
+show donor history from that event
+show recommended follow-ups
+show masjid ranking for Lebanon
+end on the dashboard with alerts and insights
+Show the coherent workflow
+Show off the best features
+Connected workflow - Events, donations, FRFs, donors, and masjids all connect in one system
+Intelligence layer
+The platform gives:
+next best action recommendations
+donor follow-up suggestions
+cause-based masjid recommendations
+alerts for missing or risky items
+Practical nonprofit value
+less human error
+better donor retention
+smarter campaign targeting
+stronger use of staff time
+End with impact
+What our problem solves and how it helps them long term
