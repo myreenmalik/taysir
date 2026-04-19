@@ -91,8 +91,9 @@ export default function Pillar3Donors() {
                 Upgrade ask for recurring orphan-support donor
               </div>
               <div className="font-body text-[0.95vw] text-muted leading-relaxed mt-[1vh] italic">
-                &ldquo;As-salamu alaykum Maryam — your 14 gifts toward orphan
-                care over the past year have made a real difference...&rdquo;
+                <span lang="ar" dir="rtl" className="font-arabic not-italic text-dark text-[1.05vw]">السلام عليكم</span>
+                {" "}Maryam — your 14 gifts toward orphan care over the past
+                year have made a real difference...
               </div>
             </div>
           </div>

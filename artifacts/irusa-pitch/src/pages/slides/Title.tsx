@@ -24,12 +24,22 @@ export default function Title() {
           <p className="font-body text-[1.4vw] tracking-[0.25em] uppercase text-cream/80 font-medium mb-[2vh]">
             Smart Event &amp; Donor Intelligence
           </p>
-          <h1 className="font-display text-[8vw] leading-[0.92] font-medium text-bg tracking-tight">
-            Tayseer.
-          </h1>
+          <div className="flex items-end gap-[2vw]">
+            <h1 className="font-display text-[8vw] leading-[0.92] font-medium text-bg tracking-tight">
+              Tayseer.
+            </h1>
+            <span
+              dir="rtl"
+              lang="ar"
+              className="font-arabic text-[5vw] leading-none text-accent font-normal pb-[1.2vh]"
+            >
+              تيسير
+            </span>
+          </div>
           <p className="font-body text-[1.6vw] text-bg/85 mt-[3vh] max-w-[55vw] leading-relaxed font-light">
-            One platform for IRUSA&apos;s events, donors, and FRFs —
-            replacing the patchwork of spreadsheets with connected intelligence.
+            From the Arabic <span lang="ar" dir="rtl" className="font-arabic text-accent text-[1.7vw]">تيسير</span>
+            <span className="italic text-bg/60"> — to make easy.</span>
+            One platform for IRUSA&apos;s events, donors, and FRFs.
           </p>
         </div>
 

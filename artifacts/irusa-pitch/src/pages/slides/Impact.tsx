@@ -2,8 +2,12 @@ export default function Impact() {
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-bg">
       <div className="absolute top-0 right-0 w-[45vw] h-full bg-primary" />
-      <div className="absolute bottom-[6vh] right-[6vw] font-display text-[18vw] leading-none text-bg/[0.05] font-bold select-none italic">
-        Tayseer
+      <div
+        dir="rtl"
+        lang="ar"
+        className="absolute bottom-[6vh] right-[6vw] font-arabic text-[22vw] leading-none text-bg/[0.07] select-none"
+      >
+        تيسير
       </div>
 
       <div className="relative z-10 h-full grid grid-cols-12 gap-[3vw] px-[7vw] py-[8vh]">

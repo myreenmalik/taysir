@@ -10,6 +10,7 @@
   --color-cream: var(--slide-cream);
   --font-display: var(--font-display-family);
   --font-body: var(--font-body-family);
+  --font-arabic: var(--font-arabic-family);
 }
 
 :root {
@@ -22,6 +23,7 @@
   --slide-dark: #0e1f17;
   --font-display-family: "Fraunces", Georgia, serif;
   --font-body-family: "Inter", system-ui, sans-serif;
+  --font-arabic-family: "Amiri", "Noto Naskh Arabic", serif;
   color-scheme: light;
 }
 
