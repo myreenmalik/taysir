@@ -694,6 +694,7 @@ export const GetAttendeeSegmentsResponse = zod.object({
 export const ListDonorsQueryParams = zod.object({
   donorCategory: zod.coerce.string().optional(),
   personalityType: zod.coerce.string().optional(),
+  tier: zod.enum(["Bronze", "Silver", "Gold", "Platinum"]).optional(),
   search: zod.coerce.string().optional(),
 });
 
@@ -709,6 +710,7 @@ export const ListDonorsResponseItem = zod.object({
   firstDonationDate: zod.string().nullish(),
   lastDonationDate: zod.string().nullish(),
   donorCategory: zod.string(),
+  donorTier: zod.enum(["Bronze", "Silver", "Gold", "Platinum"]),
   donorPersonalityType: zod.string().nullish(),
   preferredContactFrequency: zod.string().nullish(),
   notes: zod.string().nullish(),
@@ -752,6 +754,7 @@ export const GetDonorResponse = zod.object({
   firstDonationDate: zod.string().nullish(),
   lastDonationDate: zod.string().nullish(),
   donorCategory: zod.string(),
+  donorTier: zod.enum(["Bronze", "Silver", "Gold", "Platinum"]),
   donorPersonalityType: zod.string().nullish(),
   preferredContactFrequency: zod.string().nullish(),
   notes: zod.string().nullish(),
@@ -789,6 +792,7 @@ export const UpdateDonorResponse = zod.object({
   firstDonationDate: zod.string().nullish(),
   lastDonationDate: zod.string().nullish(),
   donorCategory: zod.string(),
+  donorTier: zod.enum(["Bronze", "Silver", "Gold", "Platinum"]),
   donorPersonalityType: zod.string().nullish(),
   preferredContactFrequency: zod.string().nullish(),
   notes: zod.string().nullish(),
@@ -816,6 +820,7 @@ export const GetDonorProfileResponse = zod.object({
     firstDonationDate: zod.string().nullish(),
     lastDonationDate: zod.string().nullish(),
     donorCategory: zod.string(),
+    donorTier: zod.enum(["Bronze", "Silver", "Gold", "Platinum"]),
     donorPersonalityType: zod.string().nullish(),
     preferredContactFrequency: zod.string().nullish(),
     notes: zod.string().nullish(),

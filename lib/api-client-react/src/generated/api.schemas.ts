@@ -317,6 +317,16 @@ export interface AttendeeSegments {
   highValueDonorAttendees: Attendee[];
 }
 
+export type DonorDonorTier =
+  (typeof DonorDonorTier)[keyof typeof DonorDonorTier];
+
+export const DonorDonorTier = {
+  Bronze: "Bronze",
+  Silver: "Silver",
+  Gold: "Gold",
+  Platinum: "Platinum",
+} as const;
+
 export interface Donor {
   id: number;
   name: string;
@@ -334,6 +344,7 @@ export interface Donor {
   /** @nullable */
   lastDonationDate?: string | null;
   donorCategory: string;
+  donorTier: DonorDonorTier;
   /** @nullable */
   donorPersonalityType?: string | null;
   /** @nullable */
@@ -606,8 +617,19 @@ export type ListEventsParams = {
 export type ListDonorsParams = {
   donorCategory?: string;
   personalityType?: string;
+  tier?: ListDonorsTier;
   search?: string;
 };
+
+export type ListDonorsTier =
+  (typeof ListDonorsTier)[keyof typeof ListDonorsTier];
+
+export const ListDonorsTier = {
+  Bronze: "Bronze",
+  Silver: "Silver",
+  Gold: "Gold",
+  Platinum: "Platinum",
+} as const;
 
 export type ListDonationsParams = {
   donorId?: number;

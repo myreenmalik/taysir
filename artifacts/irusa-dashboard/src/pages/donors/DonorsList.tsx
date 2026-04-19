@@ -17,11 +17,13 @@ import { useToast } from "@/hooks/use-toast";
 
 const CATEGORIES = ["major", "lapsed", "recurring", "emergency-responder", "seasonal", "one-time"] as const;
 const PERSONALITIES = ["Altruist", "Investor", "Repayer"] as const;
+const TIERS = ["Bronze", "Silver", "Gold", "Platinum"] as const;
 
 type FilterState = {
   search: string;
   categories: string[];
   personalities: string[];
+  tiers: string[];
   dateFrom: string;
   dateTo: string;
   minTotal: string;
@@ -34,6 +36,7 @@ function parseFilters(searchStr: string): FilterState {
     search: p.get("search") ?? "",
     categories: p.get("categories")?.split(",").filter(Boolean) ?? [],
     personalities: p.get("personalities")?.split(",").filter(Boolean) ?? [],
+    tiers: p.get("tiers")?.split(",").filter(Boolean) ?? [],
     dateFrom: p.get("dateFrom") ?? "",
     dateTo: p.get("dateTo") ?? "",
     minTotal: p.get("minTotal") ?? "",
@@ -46,12 +49,23 @@ function serializeFilters(f: FilterState): string {
   if (f.search) p.set("search", f.search);
   if (f.categories.length) p.set("categories", f.categories.join(","));
   if (f.personalities.length) p.set("personalities", f.personalities.join(","));
+  if (f.tiers.length) p.set("tiers", f.tiers.join(","));
   if (f.dateFrom) p.set("dateFrom", f.dateFrom);
   if (f.dateTo) p.set("dateTo", f.dateTo);
   if (f.minTotal) p.set("minTotal", f.minTotal);
   if (f.maxTotal) p.set("maxTotal", f.maxTotal);
   const s = p.toString();
   return s ? `?${s}` : "";
+}
+
+export function getTierColor(tier?: string | null) {
+  switch (tier) {
+    case "Platinum": return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 border-indigo-300 dark:border-indigo-700";
+    case "Gold": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700";
+    case "Silver": return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600";
+    case "Bronze": return "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 border-amber-300 dark:border-amber-800";
+    default: return "bg-muted text-muted-foreground";
+  }
 }
 
 export default function DonorsList() {
@@ -128,6 +142,7 @@ export default function DonorsList() {
       )) return false;
       if (filters.categories.length && !filters.categories.includes(d.donorCategory)) return false;
       if (filters.personalities.length && (!d.donorPersonalityType || !filters.personalities.includes(d.donorPersonalityType))) return false;
+      if (filters.tiers.length && !filters.tiers.includes(d.donorTier)) return false;
       if (dateFromMs !== null || dateToMs !== null) {
         if (!d.lastDonationDate) return false;
         const t = new Date(d.lastDonationDate).getTime();
@@ -143,15 +158,20 @@ export default function DonorsList() {
   const totalCount = donors?.length ?? 0;
   const visibleCount = filteredDonors?.length ?? 0;
 
-  const toggleArrayValue = (key: "categories" | "personalities", value: string) => {
+  const toggleArrayValue = (key: "categories" | "personalities" | "tiers", value: string) => {
     const current = filters[key];
     const next = current.includes(value) ? current.filter(v => v !== value) : [...current, value];
     updateFilters({ [key]: next } as Partial<FilterState>);
   };
 
   const hasAnyFilter =
-    filters.search || filters.categories.length || filters.personalities.length ||
+    filters.search || filters.categories.length || filters.personalities.length || filters.tiers.length ||
     filters.dateFrom || filters.dateTo || filters.minTotal || filters.maxTotal;
+
+  const tierLabel = filters.tiers.length === 0
+    ? "Tier"
+    : filters.tiers.length === 1 ? `Tier: ${filters.tiers[0]}`
+    : `Tier (${filters.tiers.length})`;
 
   const categoryLabel = filters.categories.length === 0
     ? "Category"
@@ -241,6 +261,30 @@ export default function DonorsList() {
                           data-testid={`checkbox-category-${cat}`}
                         />
                         <span className="text-sm capitalize">{cat.replace("-", " ")}</span>
+                      </label>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Tier multi-select */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2" data-testid="button-filter-tier">
+                    <span>{tierLabel}</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-2" align="start">
+                  <div className="space-y-1">
+                    {TIERS.map(t => (
+                      <label key={t} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer">
+                        <Checkbox
+                          checked={filters.tiers.includes(t)}
+                          onCheckedChange={() => toggleArrayValue("tiers", t)}
+                          data-testid={`checkbox-tier-${t}`}
+                        />
+                        <Badge variant="outline" className={getTierColor(t)}>{t}</Badge>
                       </label>
                     ))}
                   </div>
@@ -383,6 +427,14 @@ export default function DonorsList() {
                   </button>
                 </Badge>
               ))}
+              {filters.tiers.map(t => (
+                <Badge key={t} variant="secondary" className="gap-1 pr-1" data-testid={`chip-tier-${t}`}>
+                  Tier: {t}
+                  <button onClick={() => toggleArrayValue("tiers", t)} className="ml-1 rounded-sm hover:bg-muted-foreground/20 p-0.5" aria-label={`Remove ${t} tier`}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
               {(filters.dateFrom || filters.dateTo) && (
                 <Badge variant="secondary" className="gap-1 pr-1" data-testid="chip-date">
                   Donated {filters.dateFrom || "…"} → {filters.dateTo || "…"}
@@ -437,9 +489,14 @@ export default function DonorsList() {
                     filteredDonors?.map((donor) => (
                       <TableRow key={donor.id} data-testid={`row-donor-${donor.id}`}>
                         <TableCell className="font-medium">
-                          <Link href={`/donors/${donor.id}`} className="hover:underline block">
-                            {donor.name}
-                          </Link>
+                          <div className="flex items-center gap-2">
+                            <Link href={`/donors/${donor.id}`} className="hover:underline">
+                              {donor.name}
+                            </Link>
+                            <Badge variant="outline" className={getTierColor(donor.donorTier)} data-testid={`badge-tier-${donor.id}`}>
+                              {donor.donorTier}
+                            </Badge>
+                          </div>
                           <span className="text-xs text-muted-foreground block">{donor.email}</span>
                         </TableCell>
                         <TableCell>

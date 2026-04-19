@@ -34,6 +34,9 @@ router.get("/donors", async (req, res): Promise<void> => {
     if (query.data.personalityType) {
       donors = donors.filter(d => d.donorPersonalityType === query.data.personalityType);
     }
+    if (query.data.tier) {
+      donors = donors.filter(d => d.donorTier === query.data.tier);
+    }
     if (query.data.search) {
       const search = query.data.search.toLowerCase();
       donors = donors.filter(d =>

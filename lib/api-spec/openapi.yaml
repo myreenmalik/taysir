@@ -609,6 +609,11 @@ paths:
           schema:
             type: string
         - in: query
+          name: tier
+          schema:
+            type: string
+            enum: [Bronze, Silver, Gold, Platinum]
+        - in: query
           name: search
           schema:
             type: string
@@ -1639,6 +1644,9 @@ components:
           type: ["string", "null"]
         donorCategory:
           type: string
+        donorTier:
+          type: string
+          enum: [Bronze, Silver, Gold, Platinum]
         donorPersonalityType:
           type: ["string", "null"]
         preferredContactFrequency:
@@ -1656,6 +1664,7 @@ components:
         - averageDonation
         - donationCount
         - donorCategory
+        - donorTier
         - createdAt
         - updatedAt
 

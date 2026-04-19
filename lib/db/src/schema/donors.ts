@@ -14,6 +14,7 @@ export const donorsTable = pgTable("donors", {
   firstDonationDate: text("first_donation_date"),
   lastDonationDate: text("last_donation_date"),
   donorCategory: text("donor_category").notNull().default("one-time"),
+  donorTier: text("donor_tier").notNull().default("Bronze"),
   donorPersonalityType: text("donor_personality_type"),
   preferredContactFrequency: text("preferred_contact_frequency"),
   notes: text("notes"),

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { db, donationsTable, donorsTable } from "@workspace/db";
+import { db, donationsTable } from "@workspace/db";
 import {
   ListDonationsQueryParams,
   CreateDonationBody,
@@ -8,6 +8,7 @@ import {
   UpdateDonationBody,
   DeleteDonationParams,
 } from "@workspace/api-zod";
+import { recomputeDonorStats } from "../lib/donorStats";
 
 const router: IRouter = Router();
 
@@ -19,36 +20,7 @@ function serializeDonation(d: typeof donationsTable.$inferSelect) {
   };
 }
 
-async function updateDonorStats(donorId: number) {
-  const donations = await db.select().from(donationsTable).where(eq(donationsTable.donorId, donorId));
-  const total = donations.reduce((sum, d) => sum + parseFloat(d.amount as string), 0);
-  const avg = donations.length > 0 ? total / donations.length : 0;
-  const sorted = donations.sort((a, b) => a.date.localeCompare(b.date));
-
-  // Classify donor category
-  let donorCategory = "one-time";
-  if (donations.length >= 5) {
-    donorCategory = "recurring";
-  } else if (donations.length >= 2) {
-    donorCategory = "seasonal";
-  }
-  if (total >= 5000) donorCategory = "major";
-
-  // Check if lapsed (last donation > 1 year ago)
-  const lastDate = sorted[sorted.length - 1]?.date;
-  if (lastDate && new Date(lastDate) < new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)) {
-    donorCategory = "lapsed";
-  }
-
-  await db.update(donorsTable).set({
-    totalDonated: String(total),
-    averageDonation: String(avg),
-    donationCount: donations.length,
-    firstDonationDate: sorted[0]?.date ?? null,
-    lastDonationDate: lastDate ?? null,
-    donorCategory,
-  }).where(eq(donorsTable.id, donorId));
-}
+const updateDonorStats = recomputeDonorStats;
 
 router.get("/donations", async (req, res): Promise<void> => {
   const query = ListDonationsQueryParams.safeParse(req.query);

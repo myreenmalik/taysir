@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Mail, Phone, MapPin, Calendar, AlertTriangle, Sparkles, ListChecks, Check } from "lucide-react";
 import { SendEmailButton, deriveEmailSubject } from "@/components/SendEmailButton";
+import { getTierColor } from "./DonorsList";
 
 const OUTREACH_TASK_TYPES = new Set(["thank-you-email", "donation-ask", "volunteer-invite", "stewardship-call"]);
 
@@ -36,8 +37,11 @@ export default function DonorProfile() {
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
             <div>
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-3 mb-2 flex-wrap">
                 <h1 className="text-3xl font-bold tracking-tight">{donor.name}</h1>
+                <Badge variant="outline" className={`text-sm font-semibold ${getTierColor(donor.donorTier)}`} data-testid="badge-donor-tier">
+                  {donor.donorTier}
+                </Badge>
                 <Badge variant="outline" className="capitalize">{donor.donorCategory.replace("-", " ")}</Badge>
                 {donor.donorPersonalityType && <Badge variant="secondary">{donor.donorPersonalityType}</Badge>}
               </div>

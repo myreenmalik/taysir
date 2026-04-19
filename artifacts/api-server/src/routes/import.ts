@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and, sql } from "drizzle-orm";
 import { db, eventsTable, donorsTable, donationsTable, revenueEntriesTable, logisticsTasksTable, followUpTasksTable, attendeesTable } from "@workspace/db";
+import { recomputeDonorStats } from "../lib/donorStats";
 
 const MAX_IMPORT_ROWS = 5000;
 
@@ -65,32 +66,6 @@ function normalizeEmail(s: unknown): string | null {
   const t = s.trim().toLowerCase();
   if (!t) return null;
   return t;
-}
-
-async function recomputeDonorStats(donorId: number) {
-  const donations = await db.select().from(donationsTable).where(eq(donationsTable.donorId, donorId));
-  const total = donations.reduce((sum, d) => sum + parseFloat(d.amount as string), 0);
-  const avg = donations.length > 0 ? total / donations.length : 0;
-  const sorted = donations.sort((a, b) => a.date.localeCompare(b.date));
-
-  let donorCategory = "one-time";
-  if (donations.length >= 5) donorCategory = "recurring";
-  else if (donations.length >= 2) donorCategory = "seasonal";
-  if (total >= 5000) donorCategory = "major";
-
-  const lastDate = sorted[sorted.length - 1]?.date;
-  if (lastDate && new Date(lastDate) < new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)) {
-    donorCategory = "lapsed";
-  }
-
-  await db.update(donorsTable).set({
-    totalDonated: String(total),
-    averageDonation: String(avg),
-    donationCount: donations.length,
-    firstDonationDate: sorted[0]?.date ?? null,
-    lastDonationDate: lastDate ?? null,
-    donorCategory,
-  }).where(eq(donorsTable.id, donorId));
 }
 
 router.post("/import", async (req, res): Promise<void> => {
