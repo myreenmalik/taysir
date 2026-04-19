@@ -210,6 +210,22 @@ export default function ImportData() {
   const [aiMappingError, setAiMappingError] = useState<string | null>(null);
   const [aiMappingNotes, setAiMappingNotes] = useState<string | null>(null);
 
+  // AI auto-import (whole-file) state
+  const [rawSheets, setRawSheets] = useState<{ name: string; rows: unknown[][] }[]>([]);
+  const [rawFileName, setRawFileName] = useState<string>("");
+  const [aiAutoRunning, setAiAutoRunning] = useState(false);
+  const [aiAutoError, setAiAutoError] = useState<string | null>(null);
+  const [aiAutoExtraction, setAiAutoExtraction] = useState<{
+    rows: Record<string, unknown>[];
+    ignoredSheets: { name: string; reason: string }[];
+    notes: string;
+  } | null>(null);
+  const [aiAutoCommitting, setAiAutoCommitting] = useState(false);
+  const [aiAutoSummary, setAiAutoSummary] = useState<{
+    summary: { total: number; imported: number; skipped: number; failed: number; donorsAffected: number };
+    results: { index: number; status: string; donorId: number | null; donationId: number | null; reason: string | null }[];
+  } | null>(null);
+
   const fields = FIELDS[dataType];
 
   const handleFile = async (file: File) => {
@@ -236,6 +252,15 @@ export default function ImportData() {
       } else if (ext === "xlsx" || ext === "xls") {
         const buf = await file.arrayBuffer();
         const wb = XLSX.read(buf, { type: "array", cellDates: true });
+        // Stash all sheets as raw 2D arrays for the AI auto-import path.
+        const all: { name: string; rows: unknown[][] }[] = wb.SheetNames.map(n => {
+          const sheet = wb.Sheets[n];
+          const arr = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: "", raw: false });
+          return { name: n, rows: arr };
+        });
+        setRawSheets(all);
+        setRawFileName(file.name);
+        // For the manual mapping flow, keep using the first sheet with header row 0.
         const sheetName = wb.SheetNames[0];
         const sheet = wb.Sheets[sheetName];
         const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "", raw: false });
@@ -410,7 +435,64 @@ export default function ImportData() {
     setImportSummary(null);
     setImportResults([]);
     setParseError(null);
+    setRawSheets([]);
+    setRawFileName("");
+    setAiAutoError(null);
+    setAiAutoExtraction(null);
+    setAiAutoSummary(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const runAiAutoExtract = async () => {
+    if (rawSheets.length === 0) return;
+    setAiAutoRunning(true);
+    setAiAutoError(null);
+    setAiAutoExtraction(null);
+    setAiAutoSummary(null);
+    try {
+      const res = await fetch(`${API_BASE}/import/ai-extract`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sheets: rawSheets }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAiAutoError(data.error ?? "AI extraction failed");
+        return;
+      }
+      setAiAutoExtraction({
+        rows: Array.isArray(data.rows) ? data.rows : [],
+        ignoredSheets: Array.isArray(data.ignoredSheets) ? data.ignoredSheets : [],
+        notes: typeof data.notes === "string" ? data.notes : "",
+      });
+    } catch (err) {
+      setAiAutoError(err instanceof Error ? err.message : "AI extraction failed");
+    } finally {
+      setAiAutoRunning(false);
+    }
+  };
+
+  const runAiAutoCommit = async () => {
+    if (!aiAutoExtraction || aiAutoExtraction.rows.length === 0) return;
+    setAiAutoCommitting(true);
+    setAiAutoError(null);
+    try {
+      const res = await fetch(`${API_BASE}/import/ai-commit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows: aiAutoExtraction.rows }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAiAutoError(data.error ?? "AI import failed");
+        return;
+      }
+      setAiAutoSummary(data);
+    } catch (err) {
+      setAiAutoError(err instanceof Error ? err.message : "AI import failed");
+    } finally {
+      setAiAutoCommitting(false);
+    }
   };
 
   const downloadFailures = () => {
@@ -515,6 +597,119 @@ export default function ImportData() {
                 onChange={onFileChange}
               />
             </div>
+
+            {rawSheets.length > 0 && !aiAutoSummary && (
+              <div className="border rounded-lg p-4 bg-muted/30 space-y-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-semibold">Have a messy file? Let AI handle it.</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Loaded {rawSheets.length} sheet{rawSheets.length === 1 ? "" : "s"} from {rawFileName}. AI will read every tab, find the donor data, skip totals/cash counts, fix split columns, and produce clean records.
+                    </p>
+                  </div>
+                  <Button onClick={runAiAutoExtract} disabled={aiAutoRunning || aiAutoCommitting}>
+                    {aiAutoRunning ? "Reading file..." : "Auto-import with AI"}
+                  </Button>
+                </div>
+
+                {aiAutoError && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>AI error</AlertTitle>
+                    <AlertDescription>{aiAutoError}</AlertDescription>
+                  </Alert>
+                )}
+
+                {aiAutoExtraction && (
+                  <div className="space-y-3">
+                    <div className="text-sm">
+                      <span className="font-semibold">{aiAutoExtraction.rows.length}</span> donor record{aiAutoExtraction.rows.length === 1 ? "" : "s"} extracted.
+                    </div>
+
+                    {aiAutoExtraction.notes && (
+                      <Alert>
+                        <AlertTitle className="text-sm">AI notes</AlertTitle>
+                        <AlertDescription className="text-xs">{aiAutoExtraction.notes}</AlertDescription>
+                      </Alert>
+                    )}
+
+                    {aiAutoExtraction.ignoredSheets.length > 0 && (
+                      <div className="text-xs text-muted-foreground">
+                        <p className="font-semibold mb-1">Sheets skipped:</p>
+                        <ul className="list-disc pl-5 space-y-0.5">
+                          {aiAutoExtraction.ignoredSheets.map((s, i) => (
+                            <li key={i}>
+                              <span className="font-medium">{s.name}</span>{s.reason ? ` — ${s.reason}` : ""}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {aiAutoExtraction.rows.length > 0 && (
+                      <div className="border rounded bg-background overflow-x-auto max-h-72">
+                        <table className="w-full text-xs">
+                          <thead className="bg-muted sticky top-0">
+                            <tr>
+                              {["name", "email", "amount", "date", "campaign", "donationType", "paymentMethod", "location"].map(h => (
+                                <th key={h} className="text-left p-2 font-medium">{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {aiAutoExtraction.rows.slice(0, 50).map((r, i) => (
+                              <tr key={i} className="border-t">
+                                {["name", "email", "amount", "date", "campaign", "donationType", "paymentMethod", "location"].map(h => (
+                                  <td key={h} className="p-2 truncate max-w-[150px]">{r[h] != null ? String(r[h]) : ""}</td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        {aiAutoExtraction.rows.length > 50 && (
+                          <div className="p-2 text-xs text-muted-foreground text-center border-t">
+                            Showing 50 of {aiAutoExtraction.rows.length} rows
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setAiAutoExtraction(null)}>Discard</Button>
+                      <Button onClick={runAiAutoCommit} disabled={aiAutoCommitting || aiAutoExtraction.rows.length === 0}>
+                        {aiAutoCommitting ? "Importing..." : `Import ${aiAutoExtraction.rows.length} record${aiAutoExtraction.rows.length === 1 ? "" : "s"}`}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {aiAutoSummary && (
+              <div className="border rounded-lg p-4 bg-muted/30 space-y-3">
+                <p className="text-sm font-semibold">AI import complete</p>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+                  <div><div className="text-muted-foreground text-xs">Total rows</div><div className="font-semibold">{aiAutoSummary.summary.total}</div></div>
+                  <div><div className="text-muted-foreground text-xs">Imported</div><div className="font-semibold text-green-600">{aiAutoSummary.summary.imported}</div></div>
+                  <div><div className="text-muted-foreground text-xs">Skipped</div><div className="font-semibold">{aiAutoSummary.summary.skipped}</div></div>
+                  <div><div className="text-muted-foreground text-xs">Failed</div><div className="font-semibold text-destructive">{aiAutoSummary.summary.failed}</div></div>
+                  <div><div className="text-muted-foreground text-xs">Donors affected</div><div className="font-semibold">{aiAutoSummary.summary.donorsAffected}</div></div>
+                </div>
+                {aiAutoSummary.summary.failed > 0 && (
+                  <div className="text-xs text-muted-foreground max-h-40 overflow-y-auto border rounded p-2 bg-background">
+                    <p className="font-semibold mb-1">Failure reasons:</p>
+                    <ul className="space-y-0.5">
+                      {aiAutoSummary.results.filter(r => r.status === "failed").slice(0, 20).map(r => (
+                        <li key={r.index}>Row {r.index + 1}: {r.reason}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <div className="flex justify-end">
+                  <Button variant="outline" onClick={reset}>Import another file</Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

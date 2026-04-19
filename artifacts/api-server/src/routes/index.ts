@@ -13,6 +13,8 @@ import dashboardRouter from "./dashboard";
 import reportsRouter from "./reports";
 import importRouter from "./import";
 import aiMappingRouter from "./aiMapping";
+import aiExtractRouter from "./aiExtract";
+import aiCommitRouter from "./aiCommit";
 
 const router: IRouter = Router();
 
@@ -30,5 +32,7 @@ router.use(dashboardRouter);
 router.use(reportsRouter);
 router.use(importRouter);
 router.use(aiMappingRouter);
+router.use(aiExtractRouter);
+router.use(aiCommitRouter);
 
 export default router;
