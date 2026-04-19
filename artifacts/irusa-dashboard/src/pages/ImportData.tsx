@@ -504,12 +504,12 @@ export default function ImportData() {
     setCommitting(true);
     setCommitError(null);
     try {
-      const { donors, events } = buildEntityRecords();
+      const { donors, events, revenue } = buildEntityRecords();
       const donorActionsArr = Object.entries(donorActions).map(([idx, a]) => ({ index: parseInt(idx, 10), action: a.action, mergeWith: a.mergeWith }));
       const res = await fetch(`${API_BASE}/import/ai-commit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ donors, events, revenue: [], donorActions: donorActionsArr }),
+        body: JSON.stringify({ donors, events, revenue, donorActions: donorActionsArr }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -756,11 +756,10 @@ export default function ImportData() {
                           m.kind === "notes" ? `notes:${m.entity}` :
                           `field:${m.entity}.${m.field}`;
                         const conf = m && m.kind === "field" ? m.confidence : null;
-                        const isRequiredAndMissing = m == null && requiredMissing.some(rm => false); // not used per-row; alert covers it
                         const reason = m && m.kind === "field" ? m.reason : null;
                         const isSaved = m && m.kind === "field" && m.source === "saved";
                         return (
-                          <tr key={header} className={`border-t ${isRequiredAndMissing ? "bg-destructive/10" : ""}`}>
+                          <tr key={header} className="border-t">
                             <td className="p-2 font-medium align-top">{header}</td>
                             <td className="p-2 text-xs text-muted-foreground align-top">
                               {samples.length > 0 ? samples.map((s, i) => (
@@ -886,9 +885,12 @@ export default function ImportData() {
 
                 <div className="flex items-center justify-between">
                   <div className="text-xs text-muted-foreground">
-                    {parsedFile.rows.length} row{parsedFile.rows.length === 1 ? "" : "s"} ready · {builtRecords.donors.length} donor{builtRecords.donors.length === 1 ? "" : "s"} + {builtRecords.events.length} event{builtRecords.events.length === 1 ? "" : "s"} will be created
+                    {parsedFile.rows.length} row{parsedFile.rows.length === 1 ? "" : "s"} ready ·{" "}
+                    {builtRecords.donors.length} donor{builtRecords.donors.length === 1 ? "" : "s"},{" "}
+                    {builtRecords.events.length} event{builtRecords.events.length === 1 ? "" : "s"},{" "}
+                    {builtRecords.revenue.length} revenue entr{builtRecords.revenue.length === 1 ? "y" : "ies"} will be created
                   </div>
-                  <Button onClick={proceedToReview} disabled={requiredMissing.length > 0 || (builtRecords.donors.length === 0 && builtRecords.events.length === 0)}>
+                  <Button onClick={proceedToReview} disabled={requiredMissing.length > 0 || (builtRecords.donors.length === 0 && builtRecords.events.length === 0 && builtRecords.revenue.length === 0)}>
                     Continue to review
                   </Button>
                 </div>
