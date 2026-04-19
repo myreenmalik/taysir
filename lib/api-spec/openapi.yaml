@@ -1970,6 +1970,10 @@ components:
           type: number
         atRiskDonors:
           type: integer
+        tierBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/DonorTierStat"
       required:
         - totalEvents
         - upcomingEvents
@@ -1983,6 +1987,22 @@ components:
         - pendingFollowUps
         - totalDonations
         - atRiskDonors
+        - tierBreakdown
+
+    DonorTierStat:
+      type: object
+      properties:
+        tier:
+          type: string
+          enum: [Bronze, Silver, Gold, Platinum]
+        donorCount:
+          type: integer
+        totalRaised:
+          type: number
+      required:
+        - tier
+        - donorCount
+        - totalRaised
 
     Alert:
       type: object

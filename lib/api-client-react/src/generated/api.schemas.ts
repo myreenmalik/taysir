@@ -508,6 +508,22 @@ export interface UpdateFollowUpTaskBody {
   notes?: string | null;
 }
 
+export type DonorTierStatTier =
+  (typeof DonorTierStatTier)[keyof typeof DonorTierStatTier];
+
+export const DonorTierStatTier = {
+  Bronze: "Bronze",
+  Silver: "Silver",
+  Gold: "Gold",
+  Platinum: "Platinum",
+} as const;
+
+export interface DonorTierStat {
+  tier: DonorTierStatTier;
+  donorCount: number;
+  totalRaised: number;
+}
+
 export interface DashboardSummary {
   totalEvents: number;
   upcomingEvents: number;
@@ -521,6 +537,7 @@ export interface DashboardSummary {
   pendingFollowUps: number;
   totalDonations: number;
   atRiskDonors: number;
+  tierBreakdown: DonorTierStat[];
 }
 
 export interface Alert {

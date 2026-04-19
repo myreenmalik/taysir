@@ -43,6 +43,17 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
   // At risk donors (lapsed)
   const atRiskDonors = donors.filter(d => d.donorCategory === "lapsed").length;
 
+  // Tier breakdown
+  const tiers = ["Bronze", "Silver", "Gold", "Platinum"] as const;
+  const tierBreakdown = tiers.map(tier => {
+    const tierDonors = donors.filter(d => d.donorTier === tier);
+    const donorIds = new Set(tierDonors.map(d => d.id));
+    const totalRaised = donations
+      .filter(d => d.donorId !== null && donorIds.has(d.donorId))
+      .reduce((sum, d) => sum + parseFloat(d.amount as string), 0);
+    return { tier, donorCount: tierDonors.length, totalRaised };
+  });
+
   res.json({
     totalEvents: events.length,
     upcomingEvents: upcomingEvents.length,
@@ -56,6 +67,7 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
     pendingFollowUps,
     totalDonations,
     atRiskDonors,
+    tierBreakdown,
   });
 });
 

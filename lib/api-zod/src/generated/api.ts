@@ -1117,6 +1117,13 @@ export const GetDashboardSummaryResponse = zod.object({
   pendingFollowUps: zod.number(),
   totalDonations: zod.number(),
   atRiskDonors: zod.number(),
+  tierBreakdown: zod.array(
+    zod.object({
+      tier: zod.enum(["Bronze", "Silver", "Gold", "Platinum"]),
+      donorCount: zod.number(),
+      totalRaised: zod.number(),
+    }),
+  ),
 });
 
 /**
