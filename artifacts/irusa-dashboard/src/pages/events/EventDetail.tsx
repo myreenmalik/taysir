@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MapPin, Calendar, Users, DollarSign, Target, CheckCircle2, AlertCircle, Clock, PieChart, Info, Search } from "lucide-react";
 import { useState, useMemo } from "react";
@@ -61,6 +62,15 @@ export default function EventDetail() {
       return true;
     });
   }, [attendees, attendeeSearch, attendeeTypeFilter, attendeeStatusFilter, attendeeDonatedFilter]);
+
+  const attendeeFiltersActive = attendeeSearch !== "" || attendeeTypeFilter !== "all" || attendeeStatusFilter !== "all" || attendeeDonatedFilter !== "all";
+
+  const clearAttendeeFilters = () => {
+    setAttendeeSearch("");
+    setAttendeeTypeFilter("all");
+    setAttendeeStatusFilter("all");
+    setAttendeeDonatedFilter("all");
+  };
   const { data: followUps } = useListFollowUpTasks({ eventId }, { query: { enabled: !!eventId, queryKey: getListFollowUpTasksQueryKey({ eventId }) } });
 
   if (loadingEvent || loadingSummary) {
@@ -394,6 +404,11 @@ export default function EventDetail() {
                         <SelectItem value="no">Donated: No</SelectItem>
                       </SelectContent>
                     </Select>
+                    {attendeeFiltersActive && (
+                      <Button variant="ghost" onClick={clearAttendeeFilters}>
+                        Clear filters
+                      </Button>
+                    )}
                   </div>
                 <div className="rounded-md border">
                   <Table>
