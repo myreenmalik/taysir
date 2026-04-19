@@ -15,6 +15,7 @@ import importRouter from "./import";
 import aiMappingRouter from "./aiMapping";
 import aiExtractRouter from "./aiExtract";
 import aiCommitRouter from "./aiCommit";
+import aiDuplicatesRouter from "./aiDuplicates";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(importRouter);
 router.use(aiMappingRouter);
 router.use(aiExtractRouter);
 router.use(aiCommitRouter);
+router.use(aiDuplicatesRouter);
 
 export default router;

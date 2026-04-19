@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, Fragment } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { useQueryClient } from "@tanstack/react-query";
@@ -215,16 +215,28 @@ export default function ImportData() {
   const [rawFileName, setRawFileName] = useState<string>("");
   const [aiAutoRunning, setAiAutoRunning] = useState(false);
   const [aiAutoError, setAiAutoError] = useState<string | null>(null);
+  type AIRow = Record<string, unknown> & { _confidence?: string; _reason?: string; _source?: Record<string, unknown> };
+  type DuplicateCandidate = { id: number; name: string; email: string | null; totalDonated: string; donationCount: number; matchedOn: string };
+  type DuplicateMatch = { index: number; candidates: DuplicateCandidate[]; suggestion: string };
   const [aiAutoExtraction, setAiAutoExtraction] = useState<{
-    rows: Record<string, unknown>[];
+    donors: AIRow[];
+    events: AIRow[];
+    revenue: AIRow[];
     ignoredSheets: { name: string; reason: string }[];
     notes: string;
+    stats?: { sheetsProcessed: number; chunksRun: number; totalRows: number };
   } | null>(null);
+  const [duplicateMatches, setDuplicateMatches] = useState<DuplicateMatch[]>([]);
+  const [donorActions, setDonorActions] = useState<Record<number, { action: "create" | "merge" | "skip"; mergeWith?: number }>>({});
   const [aiAutoCommitting, setAiAutoCommitting] = useState(false);
   const [aiAutoSummary, setAiAutoSummary] = useState<{
-    summary: { total: number; imported: number; skipped: number; failed: number; donorsAffected: number };
-    results: { index: number; status: string; donorId: number | null; donationId: number | null; reason: string | null }[];
+    summary: Record<string, number>;
+    donorResults: { index: number; status: string; donorId: number | null; donationId: number | null; reason: string | null }[];
+    eventResults: { index: number; status: string; eventId: number | null; reason: string | null }[];
+    revenueResults: { index: number; status: string; revenueId: number | null; reason: string | null }[];
   } | null>(null);
+  const [expandedDonor, setExpandedDonor] = useState<number | null>(null);
+  const [confidenceFilter, setConfidenceFilter] = useState<"all" | "low">("all");
 
   const fields = FIELDS[dataType];
 
@@ -440,6 +452,10 @@ export default function ImportData() {
     setAiAutoError(null);
     setAiAutoExtraction(null);
     setAiAutoSummary(null);
+    setDuplicateMatches([]);
+    setDonorActions({});
+    setExpandedDonor(null);
+    setConfidenceFilter("all");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -449,6 +465,8 @@ export default function ImportData() {
     setAiAutoError(null);
     setAiAutoExtraction(null);
     setAiAutoSummary(null);
+    setDuplicateMatches([]);
+    setDonorActions({});
     try {
       const res = await fetch(`${API_BASE}/import/ai-extract`, {
         method: "POST",
@@ -460,11 +478,44 @@ export default function ImportData() {
         setAiAutoError(data.error ?? "AI extraction failed");
         return;
       }
+      const donors = Array.isArray(data.donors) ? data.donors : [];
+      const events = Array.isArray(data.events) ? data.events : [];
+      const revenue = Array.isArray(data.revenue) ? data.revenue : [];
       setAiAutoExtraction({
-        rows: Array.isArray(data.rows) ? data.rows : [],
+        donors,
+        events,
+        revenue,
         ignoredSheets: Array.isArray(data.ignoredSheets) ? data.ignoredSheets : [],
         notes: typeof data.notes === "string" ? data.notes : "",
+        stats: data.stats,
       });
+
+      // Auto-check for duplicates against existing donors.
+      if (donors.length > 0) {
+        try {
+          const dupRes = await fetch(`${API_BASE}/import/ai-preview-duplicates`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ donors: donors.map((d: AIRow) => ({ name: d.name, email: d.email })) }),
+          });
+          const dupData = await dupRes.json();
+          if (dupRes.ok && Array.isArray(dupData.matches)) {
+            setDuplicateMatches(dupData.matches);
+            // Default actions: merge if a single strong match exists, else create
+            const initActions: Record<number, { action: "create" | "merge" | "skip"; mergeWith?: number }> = {};
+            for (const m of dupData.matches as DuplicateMatch[]) {
+              if (m.candidates.length > 0) {
+                initActions[m.index] = { action: "merge", mergeWith: m.candidates[0].id };
+              } else {
+                initActions[m.index] = { action: "create" };
+              }
+            }
+            setDonorActions(initActions);
+          }
+        } catch {
+          // Non-fatal — just skip duplicate preview.
+        }
+      }
     } catch (err) {
       setAiAutoError(err instanceof Error ? err.message : "AI extraction failed");
     } finally {
@@ -473,14 +524,26 @@ export default function ImportData() {
   };
 
   const runAiAutoCommit = async () => {
-    if (!aiAutoExtraction || aiAutoExtraction.rows.length === 0) return;
+    if (!aiAutoExtraction) return;
+    const totalRows = aiAutoExtraction.donors.length + aiAutoExtraction.events.length + aiAutoExtraction.revenue.length;
+    if (totalRows === 0) return;
     setAiAutoCommitting(true);
     setAiAutoError(null);
     try {
+      const donorActionsArr = Object.entries(donorActions).map(([idx, a]) => ({
+        index: parseInt(idx, 10),
+        action: a.action,
+        mergeWith: a.mergeWith,
+      }));
       const res = await fetch(`${API_BASE}/import/ai-commit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rows: aiAutoExtraction.rows }),
+        body: JSON.stringify({
+          donors: aiAutoExtraction.donors,
+          events: aiAutoExtraction.events,
+          revenue: aiAutoExtraction.revenue,
+          donorActions: donorActionsArr,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -488,11 +551,17 @@ export default function ImportData() {
         return;
       }
       setAiAutoSummary(data);
+      // Invalidate dashboard caches so new data appears
+      void queryClient.invalidateQueries();
     } catch (err) {
       setAiAutoError(err instanceof Error ? err.message : "AI import failed");
     } finally {
       setAiAutoCommitting(false);
     }
+  };
+
+  const setDonorAction = (idx: number, action: "create" | "merge" | "skip", mergeWith?: number) => {
+    setDonorActions(prev => ({ ...prev, [idx]: { action, mergeWith } }));
   };
 
   const downloadFailures = () => {
@@ -620,87 +689,304 @@ export default function ImportData() {
                   </Alert>
                 )}
 
-                {aiAutoExtraction && (
-                  <div className="space-y-3">
-                    <div className="text-sm">
-                      <span className="font-semibold">{aiAutoExtraction.rows.length}</span> donor record{aiAutoExtraction.rows.length === 1 ? "" : "s"} extracted.
-                    </div>
+                {aiAutoExtraction && (() => {
+                  const ext = aiAutoExtraction;
+                  const lowConfDonors = ext.donors.filter(r => r._confidence === "low").length;
+                  const medConfDonors = ext.donors.filter(r => r._confidence === "medium").length;
+                  const matchByIndex = new Map(duplicateMatches.map(m => [m.index, m]));
+                  const visibleDonors = confidenceFilter === "low"
+                    ? ext.donors.map((r, i) => [r, i] as const).filter(([r]) => r._confidence === "low")
+                    : ext.donors.map((r, i) => [r, i] as const);
+                  const totalToImport = ext.donors.length + ext.events.length + ext.revenue.length;
+                  return (
+                    <div className="space-y-3">
+                      {ext.stats && (
+                        <div className="text-xs text-muted-foreground">
+                          Read {ext.stats.sheetsProcessed} sheet{ext.stats.sheetsProcessed === 1 ? "" : "s"}, {ext.stats.totalRows} row{ext.stats.totalRows === 1 ? "" : "s"}, ran {ext.stats.chunksRun} AI pass{ext.stats.chunksRun === 1 ? "" : "es"}.
+                        </div>
+                      )}
 
-                    {aiAutoExtraction.notes && (
-                      <Alert>
-                        <AlertTitle className="text-sm">AI notes</AlertTitle>
-                        <AlertDescription className="text-xs">{aiAutoExtraction.notes}</AlertDescription>
-                      </Alert>
-                    )}
-
-                    {aiAutoExtraction.ignoredSheets.length > 0 && (
-                      <div className="text-xs text-muted-foreground">
-                        <p className="font-semibold mb-1">Sheets skipped:</p>
-                        <ul className="list-disc pl-5 space-y-0.5">
-                          {aiAutoExtraction.ignoredSheets.map((s, i) => (
-                            <li key={i}>
-                              <span className="font-medium">{s.name}</span>{s.reason ? ` — ${s.reason}` : ""}
-                            </li>
-                          ))}
-                        </ul>
+                      <div className="grid grid-cols-3 gap-3 text-sm">
+                        <div className="border rounded p-3 bg-background">
+                          <div className="text-xs text-muted-foreground">Donors</div>
+                          <div className="text-2xl font-semibold">{ext.donors.length}</div>
+                          {lowConfDonors > 0 && <div className="text-xs text-amber-600 mt-1">{lowConfDonors} low confidence</div>}
+                          {medConfDonors > 0 && <div className="text-xs text-blue-600">{medConfDonors} medium confidence</div>}
+                        </div>
+                        <div className="border rounded p-3 bg-background">
+                          <div className="text-xs text-muted-foreground">Events</div>
+                          <div className="text-2xl font-semibold">{ext.events.length}</div>
+                        </div>
+                        <div className="border rounded p-3 bg-background">
+                          <div className="text-xs text-muted-foreground">Revenue entries</div>
+                          <div className="text-2xl font-semibold">{ext.revenue.length}</div>
+                        </div>
                       </div>
-                    )}
 
-                    {aiAutoExtraction.rows.length > 0 && (
-                      <div className="border rounded bg-background overflow-x-auto max-h-72">
-                        <table className="w-full text-xs">
-                          <thead className="bg-muted sticky top-0">
-                            <tr>
-                              {["name", "email", "amount", "date", "campaign", "donationType", "paymentMethod", "location"].map(h => (
-                                <th key={h} className="text-left p-2 font-medium">{h}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {aiAutoExtraction.rows.slice(0, 50).map((r, i) => (
-                              <tr key={i} className="border-t">
-                                {["name", "email", "amount", "date", "campaign", "donationType", "paymentMethod", "location"].map(h => (
-                                  <td key={h} className="p-2 truncate max-w-[150px]">{r[h] != null ? String(r[h]) : ""}</td>
-                                ))}
-                              </tr>
+                      {ext.notes && (
+                        <Alert>
+                          <AlertTitle className="text-sm">AI notes</AlertTitle>
+                          <AlertDescription className="text-xs whitespace-pre-wrap">{ext.notes}</AlertDescription>
+                        </Alert>
+                      )}
+
+                      {ext.ignoredSheets.length > 0 && (
+                        <div className="text-xs text-muted-foreground">
+                          <p className="font-semibold mb-1">Sheets skipped:</p>
+                          <ul className="list-disc pl-5 space-y-0.5">
+                            {ext.ignoredSheets.map((s, i) => (
+                              <li key={i}><span className="font-medium">{s.name}</span>{s.reason ? ` — ${s.reason}` : ""}</li>
                             ))}
-                          </tbody>
-                        </table>
-                        {aiAutoExtraction.rows.length > 50 && (
-                          <div className="p-2 text-xs text-muted-foreground text-center border-t">
-                            Showing 50 of {aiAutoExtraction.rows.length} rows
-                          </div>
-                        )}
-                      </div>
-                    )}
+                          </ul>
+                        </div>
+                      )}
 
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" onClick={() => setAiAutoExtraction(null)}>Discard</Button>
-                      <Button onClick={runAiAutoCommit} disabled={aiAutoCommitting || aiAutoExtraction.rows.length === 0}>
-                        {aiAutoCommitting ? "Importing..." : `Import ${aiAutoExtraction.rows.length} record${aiAutoExtraction.rows.length === 1 ? "" : "s"}`}
-                      </Button>
+                      {ext.donors.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-semibold">Donor records</p>
+                            {lowConfDonors > 0 && (
+                              <div className="flex items-center gap-2 text-xs">
+                                <button
+                                  type="button"
+                                  className={`px-2 py-1 rounded ${confidenceFilter === "all" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+                                  onClick={() => setConfidenceFilter("all")}
+                                >All ({ext.donors.length})</button>
+                                <button
+                                  type="button"
+                                  className={`px-2 py-1 rounded ${confidenceFilter === "low" ? "bg-amber-500 text-white" : "bg-muted"}`}
+                                  onClick={() => setConfidenceFilter("low")}
+                                >Review only ({lowConfDonors})</button>
+                              </div>
+                            )}
+                          </div>
+                          <div className="border rounded bg-background overflow-auto max-h-96">
+                            <table className="w-full text-xs">
+                              <thead className="bg-muted sticky top-0 z-10">
+                                <tr>
+                                  <th className="text-left p-2 font-medium w-8"></th>
+                                  <th className="text-left p-2 font-medium">name</th>
+                                  <th className="text-left p-2 font-medium">amount</th>
+                                  <th className="text-left p-2 font-medium">campaign</th>
+                                  <th className="text-left p-2 font-medium">payment</th>
+                                  <th className="text-left p-2 font-medium">conf.</th>
+                                  <th className="text-left p-2 font-medium">action</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {visibleDonors.map(([r, idx]) => {
+                                  const conf = r._confidence ?? "high";
+                                  const dup = matchByIndex.get(idx);
+                                  const action = donorActions[idx] ?? { action: "create" as const };
+                                  const expanded = expandedDonor === idx;
+                                  return (
+                                    <Fragment key={idx}>
+                                      <tr className="border-t hover:bg-muted/40">
+                                        <td className="p-2">
+                                          <button
+                                            type="button"
+                                            className="text-muted-foreground hover:text-foreground"
+                                            onClick={() => setExpandedDonor(expanded ? null : idx)}
+                                          >{expanded ? "▼" : "▶"}</button>
+                                        </td>
+                                        <td className="p-2 truncate max-w-[180px]">{String(r.name ?? "")}</td>
+                                        <td className="p-2">{r.amount != null ? `$${String(r.amount)}` : ""}</td>
+                                        <td className="p-2 truncate max-w-[120px]">{String(r.campaign ?? "")}</td>
+                                        <td className="p-2 truncate max-w-[100px]">{String(r.paymentMethod ?? "")}</td>
+                                        <td className="p-2">
+                                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                                            conf === "high" ? "bg-green-100 text-green-700" :
+                                            conf === "medium" ? "bg-blue-100 text-blue-700" :
+                                            "bg-amber-100 text-amber-800"
+                                          }`}>{conf}</span>
+                                        </td>
+                                        <td className="p-2">
+                                          {dup && dup.candidates.length > 0 ? (
+                                            <select
+                                              className="text-xs border rounded px-1 py-0.5 bg-background"
+                                              value={action.action === "merge" ? `merge:${action.mergeWith}` : action.action}
+                                              onChange={(e) => {
+                                                const v = e.target.value;
+                                                if (v.startsWith("merge:")) setDonorAction(idx, "merge", parseInt(v.slice(6), 10));
+                                                else if (v === "create") setDonorAction(idx, "create");
+                                                else setDonorAction(idx, "skip");
+                                              }}
+                                            >
+                                              {dup.candidates.map(c => (
+                                                <option key={c.id} value={`merge:${c.id}`}>Merge → {c.name}{c.email ? ` (${c.email})` : ""}</option>
+                                              ))}
+                                              <option value="create">Create new</option>
+                                              <option value="skip">Skip</option>
+                                            </select>
+                                          ) : (
+                                            <select
+                                              className="text-xs border rounded px-1 py-0.5 bg-background"
+                                              value={action.action}
+                                              onChange={(e) => setDonorAction(idx, e.target.value as "create" | "skip")}
+                                            >
+                                              <option value="create">Create</option>
+                                              <option value="skip">Skip</option>
+                                            </select>
+                                          )}
+                                        </td>
+                                      </tr>
+                                      {expanded && (
+                                        <tr className="border-t bg-muted/20" key={`${idx}-detail`}>
+                                          <td colSpan={7} className="p-3">
+                                            {r._reason && (
+                                              <div className="mb-2 text-xs">
+                                                <span className="font-semibold">AI reasoning: </span>
+                                                <span className="text-muted-foreground">{String(r._reason)}</span>
+                                              </div>
+                                            )}
+                                            {r._source && Object.keys(r._source).length > 0 && (
+                                              <div className="text-xs">
+                                                <p className="font-semibold mb-1">Cleaned values (original → AI):</p>
+                                                <table className="w-full">
+                                                  <tbody>
+                                                    {Object.entries(r._source).map(([k, v]) => (
+                                                      <tr key={k} className="border-t border-muted">
+                                                        <td className="py-1 pr-2 font-medium w-32">{k}</td>
+                                                        <td className="py-1 pr-2 text-muted-foreground line-through">{String(v ?? "")}</td>
+                                                        <td className="py-1 pr-2">→</td>
+                                                        <td className="py-1 font-medium">{String(r[k] ?? "")}</td>
+                                                      </tr>
+                                                    ))}
+                                                  </tbody>
+                                                </table>
+                                              </div>
+                                            )}
+                                            {dup && dup.candidates.length > 0 && (
+                                              <div className="mt-2 text-xs">
+                                                <p className="font-semibold mb-1">Possible matches in your database:</p>
+                                                <ul className="space-y-0.5">
+                                                  {dup.candidates.map(c => (
+                                                    <li key={c.id}>
+                                                      <span className="font-medium">{c.name}</span>
+                                                      {c.email && <span className="text-muted-foreground"> ({c.email})</span>}
+                                                      <span className="text-muted-foreground"> — ${parseFloat(c.totalDonated).toFixed(0)} across {c.donationCount} gift{c.donationCount === 1 ? "" : "s"}, matched on {c.matchedOn}</span>
+                                                    </li>
+                                                  ))}
+                                                </ul>
+                                              </div>
+                                            )}
+                                          </td>
+                                        </tr>
+                                      )}
+                                    </Fragment>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+
+                      {ext.events.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-sm font-semibold">Events</p>
+                          <div className="border rounded bg-background overflow-auto max-h-48">
+                            <table className="w-full text-xs">
+                              <thead className="bg-muted sticky top-0"><tr>
+                                {["name", "date", "location", "eventType", "campaign"].map(h => (
+                                  <th key={h} className="text-left p-2 font-medium">{h}</th>
+                                ))}
+                                <th className="text-left p-2 font-medium">conf.</th>
+                              </tr></thead>
+                              <tbody>
+                                {ext.events.map((r, i) => (
+                                  <tr key={i} className="border-t">
+                                    {["name", "date", "location", "eventType", "campaign"].map(h => (
+                                      <td key={h} className="p-2 truncate max-w-[150px]">{r[h] != null ? String(r[h]) : ""}</td>
+                                    ))}
+                                    <td className="p-2"><span className={`px-1.5 py-0.5 rounded text-[10px] ${r._confidence === "low" ? "bg-amber-100 text-amber-800" : r._confidence === "medium" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>{r._confidence ?? "high"}</span></td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+
+                      {ext.revenue.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-sm font-semibold">Revenue entries</p>
+                          <div className="border rounded bg-background overflow-auto max-h-48">
+                            <table className="w-full text-xs">
+                              <thead className="bg-muted sticky top-0"><tr>
+                                {["eventName", "paymentType", "amount", "quantity"].map(h => (
+                                  <th key={h} className="text-left p-2 font-medium">{h}</th>
+                                ))}
+                                <th className="text-left p-2 font-medium">conf.</th>
+                              </tr></thead>
+                              <tbody>
+                                {ext.revenue.map((r, i) => (
+                                  <tr key={i} className="border-t">
+                                    {["eventName", "paymentType", "amount", "quantity"].map(h => (
+                                      <td key={h} className="p-2 truncate max-w-[150px]">{r[h] != null ? String(r[h]) : ""}</td>
+                                    ))}
+                                    <td className="p-2"><span className={`px-1.5 py-0.5 rounded text-[10px] ${r._confidence === "low" ? "bg-amber-100 text-amber-800" : r._confidence === "medium" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>{r._confidence ?? "high"}</span></td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex justify-end gap-2 pt-2">
+                        <Button variant="outline" onClick={() => setAiAutoExtraction(null)}>Discard</Button>
+                        <Button onClick={runAiAutoCommit} disabled={aiAutoCommitting || totalToImport === 0}>
+                          {aiAutoCommitting ? "Importing..." : `Import ${totalToImport} record${totalToImport === 1 ? "" : "s"}`}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             )}
 
             {aiAutoSummary && (
               <div className="border rounded-lg p-4 bg-muted/30 space-y-3">
                 <p className="text-sm font-semibold">AI import complete</p>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
-                  <div><div className="text-muted-foreground text-xs">Total rows</div><div className="font-semibold">{aiAutoSummary.summary.total}</div></div>
-                  <div><div className="text-muted-foreground text-xs">Imported</div><div className="font-semibold text-green-600">{aiAutoSummary.summary.imported}</div></div>
-                  <div><div className="text-muted-foreground text-xs">Skipped</div><div className="font-semibold">{aiAutoSummary.summary.skipped}</div></div>
-                  <div><div className="text-muted-foreground text-xs">Failed</div><div className="font-semibold text-destructive">{aiAutoSummary.summary.failed}</div></div>
-                  <div><div className="text-muted-foreground text-xs">Donors affected</div><div className="font-semibold">{aiAutoSummary.summary.donorsAffected}</div></div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                  <div className="border rounded p-3 bg-background">
+                    <div className="text-xs font-semibold mb-2">Donors</div>
+                    <div className="space-y-0.5 text-xs">
+                      <div>Imported: <span className="font-semibold text-green-600">{aiAutoSummary.summary.donorsImported ?? 0}</span></div>
+                      <div>Merged: <span className="font-semibold text-blue-600">{aiAutoSummary.summary.donorsMerged ?? 0}</span></div>
+                      <div>Skipped: <span className="font-semibold">{aiAutoSummary.summary.donorsSkipped ?? 0}</span></div>
+                      <div>Failed: <span className="font-semibold text-destructive">{aiAutoSummary.summary.donorsFailed ?? 0}</span></div>
+                    </div>
+                  </div>
+                  <div className="border rounded p-3 bg-background">
+                    <div className="text-xs font-semibold mb-2">Events</div>
+                    <div className="space-y-0.5 text-xs">
+                      <div>Imported: <span className="font-semibold text-green-600">{aiAutoSummary.summary.eventsImported ?? 0}</span></div>
+                      <div>Failed: <span className="font-semibold text-destructive">{aiAutoSummary.summary.eventsFailed ?? 0}</span></div>
+                    </div>
+                  </div>
+                  <div className="border rounded p-3 bg-background">
+                    <div className="text-xs font-semibold mb-2">Revenue</div>
+                    <div className="space-y-0.5 text-xs">
+                      <div>Imported: <span className="font-semibold text-green-600">{aiAutoSummary.summary.revenueImported ?? 0}</span></div>
+                      <div>Skipped: <span className="font-semibold">{aiAutoSummary.summary.revenueSkipped ?? 0}</span></div>
+                      <div>Failed: <span className="font-semibold text-destructive">{aiAutoSummary.summary.revenueFailed ?? 0}</span></div>
+                    </div>
+                  </div>
                 </div>
-                {aiAutoSummary.summary.failed > 0 && (
+                {(aiAutoSummary.donorResults.some(r => r.status === "failed") || aiAutoSummary.eventResults.some(r => r.status === "failed") || aiAutoSummary.revenueResults.some(r => r.status === "failed")) && (
                   <div className="text-xs text-muted-foreground max-h-40 overflow-y-auto border rounded p-2 bg-background">
-                    <p className="font-semibold mb-1">Failure reasons:</p>
+                    <p className="font-semibold mb-1">Failures:</p>
                     <ul className="space-y-0.5">
-                      {aiAutoSummary.results.filter(r => r.status === "failed").slice(0, 20).map(r => (
-                        <li key={r.index}>Row {r.index + 1}: {r.reason}</li>
+                      {aiAutoSummary.donorResults.filter(r => r.status === "failed").slice(0, 10).map(r => (
+                        <li key={`d${r.index}`}>Donor row {r.index + 1}: {r.reason}</li>
+                      ))}
+                      {aiAutoSummary.eventResults.filter(r => r.status === "failed").slice(0, 10).map(r => (
+                        <li key={`e${r.index}`}>Event row {r.index + 1}: {r.reason}</li>
+                      ))}
+                      {aiAutoSummary.revenueResults.filter(r => r.status === "failed").slice(0, 10).map(r => (
+                        <li key={`r${r.index}`}>Revenue row {r.index + 1}: {r.reason}</li>
                       ))}
                     </ul>
                   </div>
