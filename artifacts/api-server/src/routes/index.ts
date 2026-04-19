@@ -11,6 +11,7 @@ import donationsRouter from "./donations";
 import followupRouter from "./followup";
 import dashboardRouter from "./dashboard";
 import reportsRouter from "./reports";
+import importRouter from "./import";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(donationsRouter);
 router.use(followupRouter);
 router.use(dashboardRouter);
 router.use(reportsRouter);
+router.use(importRouter);
 
 export default router;
