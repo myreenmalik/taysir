@@ -10,11 +10,11 @@ export function Splash() {
 
   useEffect(() => {
     if (phase === "hidden") return;
-    const fadeTimer = window.setTimeout(() => setPhase("fading"), 2400);
+    const fadeTimer = window.setTimeout(() => setPhase("fading"), 2800);
     const doneTimer = window.setTimeout(() => {
       setPhase("hidden");
       sessionStorage.setItem(STORAGE_KEY, "1");
-    }, 3400);
+    }, 3800);
     return () => {
       window.clearTimeout(fadeTimer);
       window.clearTimeout(doneTimer);
@@ -25,78 +25,88 @@ export function Splash() {
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center bg-background transition-opacity duration-1000 ${
+      className={`fixed inset-0 z-[100] overflow-hidden bg-background transition-opacity duration-1000 ${
         phase === "fading" ? "opacity-0 pointer-events-none" : "opacity-100"
       }`}
       data-testid="splash-screen"
     >
-      {/* Powder blue blob behind */}
+      {/* Powder blue diffused blob, upper-right */}
       <div
         aria-hidden="true"
-        className="absolute top-[-20%] right-[-10%] h-[80vh] w-[80vh] rounded-full opacity-70 blur-3xl"
+        className="absolute top-[-15%] right-[-15%] h-[90vh] w-[90vh] rounded-full opacity-80 blur-3xl"
         style={{
           background:
-            "radial-gradient(circle, hsla(210, 70%, 75%, 0.55) 0%, hsla(210, 70%, 80%, 0.0) 70%)",
+            "radial-gradient(circle, hsla(210, 75%, 70%, 0.55) 0%, hsla(210, 75%, 80%, 0.0) 70%)",
         }}
       />
 
-      <div className="relative flex flex-col items-center text-center px-6">
-        {/* Eyebrow */}
-        <div className="splash-eyebrow text-[11px] uppercase tracking-[0.32em] text-muted-foreground font-medium mb-6">
-          Islamic Relief USA
+      {/* Top bar: ISLAMIC RELIEF USA (left) + presented by (right) */}
+      <div className="splash-topbar absolute top-8 left-8 right-8 flex items-start justify-between text-xs tracking-wide">
+        <div className="flex flex-col">
+          <span className="font-semibold text-foreground">Islamic Relief USA</span>
+          <span className="mt-2 block h-px w-48 bg-foreground/40" />
         </div>
+        <div className="text-right text-muted-foreground leading-relaxed">
+          <div className="font-medium text-foreground/80">Presented by:</div>
+          <div>Myreen Malik &amp; Bareera Saif</div>
+        </div>
+      </div>
 
-        {/* Arabic calligraphy — drawn on with a wipe-reveal mask */}
-        <div className="splash-arabic-wrap relative">
+      {/* Center composition */}
+      <div className="absolute inset-0 flex items-center">
+        <div className="relative w-full max-w-6xl mx-auto px-12">
+          {/* Huge Arabic watermark, behind the wordmark, slightly right */}
           <span
             lang="ar"
             dir="rtl"
-            className="splash-arabic font-arabic block text-foreground/85 leading-none"
+            aria-hidden="true"
+            className="splash-arabic font-arabic absolute left-1/2 top-1/2 -translate-y-1/2 text-foreground/[0.10] leading-none whitespace-nowrap pointer-events-none select-none"
           >
             تيسير
           </span>
-        </div>
 
-        {/* Wordmark fade-in */}
-        <div className="splash-wordmark mt-6 flex items-baseline gap-1">
-          <span className="text-5xl sm:text-6xl font-bold tracking-tight text-foreground">
-            Taysir
-          </span>
-          <span className="text-5xl sm:text-6xl font-bold text-primary">.</span>
-        </div>
+          {/* Wordmark — big, bold, left-aligned */}
+          <div className="splash-wordmark relative flex items-baseline">
+            <span className="text-[clamp(5rem,12vw,11rem)] font-bold tracking-tight leading-none text-foreground">
+              Taysir
+            </span>
+            <span className="text-[clamp(5rem,12vw,11rem)] font-bold leading-none text-primary">
+              .
+            </span>
+          </div>
 
-        {/* Tagline */}
-        <div className="splash-tagline mt-4 text-sm uppercase tracking-[0.28em] text-muted-foreground">
-          Ease, by design
+          {/* Tagline, right of center, smaller */}
+          <div className="splash-tagline absolute right-12 top-1/2 -translate-y-1/2 text-right text-base sm:text-lg text-muted-foreground leading-snug max-w-[14rem]">
+            Tracking and<br />Organizing for<br />Non-Profits
+          </div>
         </div>
       </div>
 
       <style>{`
-        .splash-arabic-wrap {
-          overflow: hidden;
+        .splash-topbar {
+          opacity: 0;
+          animation: splashFade 700ms ease-out 100ms forwards;
         }
         .splash-arabic {
-          font-size: clamp(7rem, 22vw, 18rem);
+          font-size: clamp(14rem, 38vw, 32rem);
           letter-spacing: -0.02em;
-          color: hsl(var(--foreground) / 0.9);
-          clip-path: inset(0 0 0 100%);
-          animation: splashDraw 2000ms cubic-bezier(0.65, 0, 0.35, 1) 200ms forwards;
-        }
-        @keyframes splashDraw {
-          0%   { clip-path: inset(0 0 0 100%); }
-          100% { clip-path: inset(0 0 0 0%); }
-        }
-        .splash-eyebrow {
           opacity: 0;
-          animation: splashFade 600ms ease-out 100ms forwards;
+          transform: translate(20%, -50%) scale(1.02);
+          animation: splashArabicIn 1800ms cubic-bezier(0.22, 1, 0.36, 1) 400ms forwards;
         }
-        .splash-wordmark, .splash-tagline {
+        @keyframes splashArabicIn {
+          0%   { opacity: 0; transform: translate(35%, -50%) scale(1.05); }
+          100% { opacity: 1; transform: translate(20%, -50%) scale(1); }
+        }
+        .splash-wordmark {
           opacity: 0;
-          transform: translateY(8px);
-          animation: splashRise 700ms ease-out forwards;
+          transform: translateY(14px);
+          animation: splashRise 800ms cubic-bezier(0.22, 1, 0.36, 1) 1300ms forwards;
         }
-        .splash-wordmark { animation-delay: 1700ms; }
-        .splash-tagline  { animation-delay: 2000ms; }
+        .splash-tagline {
+          opacity: 0;
+          animation: splashFade 700ms ease-out 1900ms forwards;
+        }
         @keyframes splashFade {
           to { opacity: 1; }
         }
