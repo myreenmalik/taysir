@@ -47,11 +47,11 @@ export function Splash() {
         </div>
 
         {/* Arabic calligraphy — drawn on with a wipe-reveal mask */}
-        <div className="splash-arabic-wrap relative">
+        <div className="splash-arabic-wrap relative mx-auto">
           <span
             lang="ar"
             dir="rtl"
-            className="splash-arabic font-arabic block text-foreground/85 leading-none"
+            className="splash-arabic font-arabic block text-foreground/85 leading-none text-center"
           >
             تيسير
           </span>
@@ -74,7 +74,8 @@ export function Splash() {
       <style>{`
         .splash-arabic-wrap {
           overflow: hidden;
-          padding: 0.1em 0.05em;
+          padding: 0.15em 0.2em;
+          display: inline-block;
         }
         .splash-arabic {
           font-size: clamp(6rem, 18vw, 14rem);
@@ -82,6 +83,8 @@ export function Splash() {
           color: hsl(var(--foreground) / 0.9);
           clip-path: inset(0 0 0 100%);
           animation: splashDraw 2400ms cubic-bezier(0.65, 0, 0.35, 1) 300ms forwards;
+          /* Visual-center nudge — Arabic glyphs render with uneven side bearings */
+          padding-right: 0.08em;
         }
         @keyframes splashDraw {
           0%   { clip-path: inset(0 0 0 100%); }
