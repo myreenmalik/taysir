@@ -206,38 +206,41 @@
   body::before {
     content: "";
     position: fixed;
-    top: -20vh;
-    right: -15vw;
-    width: 70vw;
-    height: 70vw;
-    max-width: 900px;
-    max-height: 900px;
+    top: -25vh;
+    right: -10vw;
+    width: 75vw;
+    height: 75vw;
+    max-width: 1100px;
+    max-height: 1100px;
     background: radial-gradient(
       circle at center,
-      hsla(210, 70%, 70%, 0.45) 0%,
-      hsla(210, 70%, 75%, 0.25) 35%,
-      hsla(210, 70%, 80%, 0.08) 60%,
-      transparent 75%
+      hsla(210, 75%, 65%, 0.85) 0%,
+      hsla(215, 70%, 70%, 0.55) 25%,
+      hsla(210, 70%, 78%, 0.25) 50%,
+      hsla(210, 70%, 85%, 0.08) 70%,
+      transparent 82%
     );
-    filter: blur(40px);
+    filter: blur(50px);
     pointer-events: none;
     z-index: 0;
   }
 
-  /* Faint Arabic watermark, bottom-left */
+  /* Faint Arabic watermark, anchored to lower portion of main content area */
   body::after {
     content: "تيسير";
     position: fixed;
-    bottom: -2vh;
-    left: 18vw;
+    bottom: -10vh;
+    right: 4vw;
     font-family: var(--app-font-arabic);
-    font-size: clamp(14rem, 28vw, 32rem);
-    color: hsla(220, 18%, 16%, 0.04);
-    line-height: 1;
+    font-weight: 700;
+    font-size: clamp(22rem, 42vw, 50rem);
+    color: hsla(210, 35%, 45%, 0.10);
+    line-height: 0.85;
     pointer-events: none;
     user-select: none;
     z-index: 0;
     white-space: nowrap;
+    letter-spacing: -0.02em;
   }
 
   /* Make sure all real content sits above the decorative layer */
