@@ -1,12 +1,12 @@
 import { ReactNode } from "react";
-import { Sidebar } from "./Sidebar";
+import { TopNav } from "./TopNav";
 
 export function Layout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen flex relative">
-      <Sidebar />
-      <main className="flex-1 ml-64 pl-8 pr-8 pt-8 pb-12 overflow-y-auto h-screen">
-        <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen flex flex-col relative">
+      <TopNav />
+      <main className="flex-1 px-8 pt-10 pb-16">
+        <div className="max-w-7xl mx-auto">
           {children}
         </div>
       </main>
