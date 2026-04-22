@@ -2,6 +2,8 @@
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Amiri:wght@400;700&display=swap');
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -59,6 +61,7 @@
   --font-sans: var(--app-font-sans);
   --font-serif: var(--app-font-serif);
   --font-mono: var(--app-font-mono);
+  --font-arabic: var(--app-font-arabic);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -67,116 +70,120 @@
 }
 
 :root {
-  --button-outline: rgba(0,0,0, .10);
-  --badge-outline: rgba(0,0,0, .05);
+  --button-outline: rgba(0,0,0, .08);
+  --badge-outline: rgba(0,0,0, .04);
 
-  --opaque-button-border-intensity: -8; 
+  --opaque-button-border-intensity: -8;
 
-  --elevate-1: rgba(0,0,0, .03);
-  --elevate-2: rgba(0,0,0, .08);
+  --elevate-1: rgba(0,0,0, .025);
+  --elevate-2: rgba(0,0,0, .06);
 
-  --background: 60 20% 98%;
-  --foreground: 175 40% 15%;
-  --border: 175 10% 85%;
-  --input: 175 10% 85%;
-  --ring: 175 60% 25%;
-  --radius: 0.3rem;
+  /* Editorial cream-grey base, like the pitch slide */
+  --background: 210 20% 96%;
+  --foreground: 220 18% 16%;
+  --border: 220 15% 88%;
+  --input: 220 15% 88%;
+  --ring: 210 55% 60%;
+  --radius: 0.75rem;
 
-  --primary: 175 60% 25%;
-  --primary-foreground: 60 20% 98%;
+  /* Powder blue primary, lifted from the slide gradient blob */
+  --primary: 210 55% 58%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 150 40% 30%;
-  --secondary-foreground: 60 20% 98%;
+  --secondary: 220 18% 22%;
+  --secondary-foreground: 0 0% 100%;
 
-  --muted: 175 10% 92%;
-  --muted-foreground: 175 20% 40%;
+  --muted: 220 15% 93%;
+  --muted-foreground: 220 10% 42%;
 
-  --accent: 175 20% 90%;
-  --accent-foreground: 175 60% 25%;
+  --accent: 210 50% 93%;
+  --accent-foreground: 220 40% 25%;
 
-  --destructive: 0 70% 40%;
+  --destructive: 0 65% 50%;
   --destructive-foreground: 0 0% 100%;
 
   --card: 0 0% 100%;
-  --card-foreground: 175 40% 15%;
-  --card-border: 175 10% 85%;
+  --card-foreground: 220 18% 16%;
+  --card-border: 220 15% 90%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 175 40% 15%;
-  --popover-border: 175 10% 85%;
+  --popover-foreground: 220 18% 16%;
+  --popover-border: 220 15% 90%;
 
-  --sidebar: 60 20% 98%;
-  --sidebar-foreground: 175 40% 15%;
-  --sidebar-border: 175 10% 85%;
-  --sidebar-primary: 175 60% 25%;
-  --sidebar-primary-foreground: 60 20% 98%;
-  --sidebar-accent: 175 10% 92%;
-  --sidebar-accent-foreground: 175 60% 25%;
-  --sidebar-ring: 175 60% 25%;
+  /* Sidebar: clean white panel against the cream background */
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 220 18% 18%;
+  --sidebar-border: 220 15% 90%;
+  --sidebar-primary: 220 18% 16%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 210 50% 95%;
+  --sidebar-accent-foreground: 220 40% 22%;
+  --sidebar-ring: 210 55% 60%;
 
-  --chart-1: 175 60% 25%;
-  --chart-2: 150 40% 30%;
-  --chart-3: 35 80% 45%;
-  --chart-4: 0 60% 45%;
-  --chart-5: 210 50% 40%;
+  --chart-1: 210 55% 58%;
+  --chart-2: 220 18% 25%;
+  --chart-3: 35 75% 55%;
+  --chart-4: 0 60% 55%;
+  --chart-5: 180 35% 50%;
 
-  --app-font-sans: 'Inter', sans-serif;
+  --app-font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --app-font-serif: Georgia, serif;
   --app-font-mono: Menlo, monospace;
+  --app-font-arabic: 'Amiri', 'Noto Naskh Arabic', serif;
 }
 
 .dark {
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);
 
-  --opaque-button-border-intensity: 9; 
+  --opaque-button-border-intensity: 9;
 
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  --background: 175 40% 10%;
-  --foreground: 60 20% 95%;
-  --border: 175 20% 20%;
-  --input: 175 20% 20%;
-  --ring: 175 40% 40%;
+  --background: 220 25% 10%;
+  --foreground: 210 20% 95%;
+  --border: 220 15% 22%;
+  --input: 220 15% 22%;
+  --ring: 210 55% 60%;
 
-  --primary: 175 40% 40%;
-  --primary-foreground: 60 20% 95%;
+  --primary: 210 60% 65%;
+  --primary-foreground: 220 25% 10%;
 
-  --secondary: 150 30% 35%;
-  --secondary-foreground: 60 20% 95%;
+  --secondary: 210 20% 92%;
+  --secondary-foreground: 220 25% 10%;
 
-  --muted: 175 30% 15%;
-  --muted-foreground: 175 20% 60%;
+  --muted: 220 20% 16%;
+  --muted-foreground: 220 10% 65%;
 
-  --accent: 175 30% 20%;
-  --accent-foreground: 60 20% 95%;
+  --accent: 220 25% 18%;
+  --accent-foreground: 210 20% 95%;
 
-  --destructive: 0 60% 40%;
+  --destructive: 0 60% 50%;
   --destructive-foreground: 0 0% 100%;
 
-  --card: 175 40% 12%;
-  --card-foreground: 60 20% 95%;
-  --card-border: 175 20% 20%;
+  --card: 220 25% 13%;
+  --card-foreground: 210 20% 95%;
+  --card-border: 220 15% 22%;
 
-  --popover: 175 40% 12%;
-  --popover-foreground: 60 20% 95%;
-  --popover-border: 175 20% 20%;
+  --popover: 220 25% 13%;
+  --popover-foreground: 210 20% 95%;
+  --popover-border: 220 15% 22%;
 
-  --sidebar: 175 40% 12%;
-  --sidebar-foreground: 60 20% 95%;
-  --sidebar-border: 175 20% 20%;
-  --sidebar-primary: 175 40% 40%;
-  --sidebar-primary-foreground: 60 20% 95%;
-  --sidebar-accent: 175 30% 15%;
-  --sidebar-accent-foreground: 60 20% 95%;
-  --sidebar-ring: 175 40% 40%;
+  --sidebar: 220 25% 12%;
+  --sidebar-foreground: 210 20% 95%;
+  --sidebar-border: 220 15% 22%;
+  --sidebar-primary: 210 60% 65%;
+  --sidebar-primary-foreground: 220 25% 10%;
+  --sidebar-accent: 220 20% 18%;
+  --sidebar-accent-foreground: 210 20% 95%;
+  --sidebar-ring: 210 55% 60%;
 
-  --chart-1: 175 40% 40%;
-  --chart-2: 150 30% 35%;
-  --chart-3: 35 60% 45%;
-  --chart-4: 0 50% 45%;
-  --chart-5: 210 40% 40%;
+  --chart-1: 210 60% 65%;
+  --chart-2: 210 20% 80%;
+  --chart-3: 35 75% 60%;
+  --chart-4: 0 60% 60%;
+  --chart-5: 180 35% 55%;
 }
 
 @layer base {
@@ -184,7 +191,64 @@
     @apply border-border;
   }
 
+  html, body {
+    background-color: hsl(var(--background));
+  }
+
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased text-foreground;
+    position: relative;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Soft powder-blue gradient blob, top-right — inspired by the pitch slide */
+  body::before {
+    content: "";
+    position: fixed;
+    top: -20vh;
+    right: -15vw;
+    width: 70vw;
+    height: 70vw;
+    max-width: 900px;
+    max-height: 900px;
+    background: radial-gradient(
+      circle at center,
+      hsla(210, 70%, 70%, 0.45) 0%,
+      hsla(210, 70%, 75%, 0.25) 35%,
+      hsla(210, 70%, 80%, 0.08) 60%,
+      transparent 75%
+    );
+    filter: blur(40px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Faint Arabic watermark, bottom-left */
+  body::after {
+    content: "تيسير";
+    position: fixed;
+    bottom: -2vh;
+    left: 18vw;
+    font-family: var(--app-font-arabic);
+    font-size: clamp(14rem, 28vw, 32rem);
+    color: hsla(220, 18%, 16%, 0.04);
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+    white-space: nowrap;
+  }
+
+  /* Make sure all real content sits above the decorative layer */
+  #root {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+@layer utilities {
+  .font-arabic {
+    font-family: var(--app-font-arabic);
   }
 }
