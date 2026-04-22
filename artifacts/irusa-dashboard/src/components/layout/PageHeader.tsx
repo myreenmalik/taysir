@@ -36,9 +36,19 @@ export function PageHeader({
     <header className="mb-10">
       {/* Top meta row */}
       <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium mb-4">
-        <span>
-          {number} <span className="text-muted-foreground/60 mx-1">/</span>{" "}
-          {eyebrow}
+        <span className="relative inline-flex items-center">
+          <span
+            lang="ar"
+            dir="rtl"
+            aria-hidden="true"
+            className="font-arabic absolute -left-1 -top-3 text-[36px] leading-none normal-case tracking-normal text-primary/15 pointer-events-none select-none"
+          >
+            تيسير
+          </span>
+          <span className="relative">
+            {number} <span className="text-muted-foreground/60 mx-1">/</span>{" "}
+            {eyebrow}
+          </span>
         </span>
         <span>{meta ?? today}</span>
       </div>
