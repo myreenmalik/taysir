@@ -225,24 +225,6 @@
     z-index: 0;
   }
 
-  /* Faint Arabic watermark, anchored to lower portion of main content area */
-  body::after {
-    content: "تيسير";
-    position: fixed;
-    bottom: -10vh;
-    right: 4vw;
-    font-family: var(--app-font-arabic);
-    font-weight: 700;
-    font-size: clamp(22rem, 42vw, 50rem);
-    color: hsla(210, 35%, 45%, 0.10);
-    line-height: 0.85;
-    pointer-events: none;
-    user-select: none;
-    z-index: 0;
-    white-space: nowrap;
-    letter-spacing: -0.02em;
-  }
-
   /* Make sure all real content sits above the decorative layer */
   #root {
     position: relative;
