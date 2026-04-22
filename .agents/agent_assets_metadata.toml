@@ -12,6 +12,36 @@ uri = "file://artifacts/irusa-pitch/public/community-dinner.png"
 type = "image"
 title = "community fundraising dinner"
 
+[[generated]]
+id = "CnGmqjaLuJDDgxKlb5OpF"
+uri = "file://attached_assets/layout-mockups/01-editorial-top-nav.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "1EhMzd71TBqB6bQ6QrY4x"
+uri = "file://attached_assets/layout-mockups/02-floating-pill-nav.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "KRQ-DmBnHUAWVqE28L2CD"
+uri = "file://attached_assets/layout-mockups/03-split-hero-cover.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "2G4dTM0jslYdFFqHi9Iph"
+uri = "file://attached_assets/layout-mockups/04-command-bar.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "34Z-7NYCGdX28OZqr9eDB"
+uri = "file://attached_assets/layout-mockups/05-right-anchored.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "KJByfuuCZuXfpUBYGivWu"
 uri = "file://attached_assets/irusa_demo_messy_eid_2026.xlsx"
@@ -23,3 +53,33 @@ id = "AliZwnWNlchEQ74dn1BYm"
 uri = "file://attached_assets/demo-imports/IRUSA_Donor_Intake_2026.csv"
 type = "table"
 title = "IRUSA Donor Intake 2026 (demo CSV)"
+
+[[outputs]]
+id = "y8wek744Q_HoC2w2AG4nT"
+uri = "file://attached_assets/layout-mockups/01-editorial-top-nav.png"
+type = "image"
+title = "Option 1 — Editorial Top Nav (Magazine Style)"
+
+[[outputs]]
+id = "qxyOssnjGcED1URkuxTTh"
+uri = "file://attached_assets/layout-mockups/02-floating-pill-nav.png"
+type = "image"
+title = "Option 2 — Floating Pill Nav (Modern Minimal)"
+
+[[outputs]]
+id = "90GstwVWRaqbeBrRVz3YV"
+uri = "file://attached_assets/layout-mockups/03-split-hero-cover.png"
+type = "image"
+title = "Option 3 — Split Hero Layout (Editorial Cover)"
+
+[[outputs]]
+id = "9e0i6g42I0hQ8uCTX3AV-"
+uri = "file://attached_assets/layout-mockups/04-command-bar.png"
+type = "image"
+title = "Option 4 — Command-Bar First (Power User)"
+
+[[outputs]]
+id = "ZYVuPuuZSjDfqEErRY7gn"
+uri = "file://attached_assets/layout-mockups/05-right-anchored.png"
+type = "image"
+title = "Option 5 — Right-Anchored Sidebar (Flipped)"
