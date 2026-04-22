@@ -33,10 +33,11 @@ export function Splash() {
       {/* Powder blue blob behind */}
       <div
         aria-hidden="true"
-        className="absolute top-[-20%] right-[-10%] h-[80vh] w-[80vh] rounded-full opacity-70 blur-3xl"
+        className="absolute top-[-20%] right-[-10%] h-[80vh] w-[80vh] rounded-full opacity-70 blur-2xl"
         style={{
           background:
             "radial-gradient(circle, hsla(210, 70%, 75%, 0.55) 0%, hsla(210, 70%, 80%, 0.0) 70%)",
+          willChange: "opacity",
         }}
       />
 
@@ -46,7 +47,7 @@ export function Splash() {
           Islamic Relief USA
         </div>
 
-        {/* Arabic calligraphy — drawn on with a wipe-reveal mask */}
+        {/* Arabic calligraphy — drawn on with a transform-based wipe */}
         <div className="splash-arabic-wrap relative mx-auto">
           <span
             lang="ar"
@@ -55,6 +56,7 @@ export function Splash() {
           >
             تيسير
           </span>
+          <span aria-hidden="true" className="splash-arabic-cover" />
         </div>
 
         {/* Wordmark fade-in */}
@@ -76,27 +78,35 @@ export function Splash() {
           overflow: hidden;
           padding: 0.15em 0.2em;
           display: inline-block;
+          position: relative;
         }
         .splash-arabic {
           font-size: clamp(6rem, 18vw, 14rem);
           letter-spacing: -0.02em;
           color: hsl(var(--foreground) / 0.9);
-          clip-path: inset(0 0 0 100%);
-          animation: splashDraw 2400ms cubic-bezier(0.65, 0, 0.35, 1) 300ms forwards;
-          /* Visual-center nudge — Arabic glyphs render with uneven side bearings */
           padding-right: 0.08em;
         }
-        @keyframes splashDraw {
-          0%   { clip-path: inset(0 0 0 100%); }
-          100% { clip-path: inset(0 0 0 0%); }
+        .splash-arabic-cover {
+          position: absolute;
+          inset: 0;
+          background: hsl(var(--background));
+          transform: translate3d(0, 0, 0);
+          will-change: transform;
+          animation: splashWipe 2400ms cubic-bezier(0.65, 0, 0.35, 1) 300ms forwards;
+        }
+        @keyframes splashWipe {
+          0%   { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(-101%, 0, 0); }
         }
         .splash-eyebrow {
           opacity: 0;
+          will-change: opacity;
           animation: splashFade 700ms ease-out 100ms forwards;
         }
         .splash-wordmark, .splash-tagline {
           opacity: 0;
-          transform: translateY(8px);
+          transform: translate3d(0, 8px, 0);
+          will-change: opacity, transform;
           animation: splashRise 800ms ease-out forwards;
         }
         .splash-wordmark { animation-delay: 2400ms; }
@@ -105,7 +115,7 @@ export function Splash() {
           to { opacity: 1; }
         }
         @keyframes splashRise {
-          to { opacity: 1; transform: translateY(0); }
+          to { opacity: 1; transform: translate3d(0, 0, 0); }
         }
       `}</style>
     </div>
