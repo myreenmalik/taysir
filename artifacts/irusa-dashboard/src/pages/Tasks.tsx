@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Check, ListChecks, AlertOctagon, AlertTriangle, ArrowRight, Calendar } from "lucide-react";
 import { SendEmailButton, deriveEmailSubject } from "@/components/SendEmailButton";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 const OUTREACH_TASK_TYPES = new Set(["thank-you-email", "donation-ask", "volunteer-invite", "stewardship-call"]);
 
@@ -79,12 +80,13 @@ export default function Tasks() {
 
   return (
     <div className="space-y-6 p-6" data-testid="page-tasks">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Tasks &amp; Action Items</h1>
-        <p className="text-muted-foreground">
-          Everything that needs your attention — donor follow-ups, missing FRFs, and data gaps.
-        </p>
-      </div>
+      <PageHeader
+        number="04"
+        eyebrow="Tasks"
+        title="Tasks"
+        arabic="المهام"
+        subtitle="Everything that needs your attention — donor follow-ups, missing FRFs, and data gaps."
+      />
 
       {dataAlerts.length > 0 && (
         <Card data-testid="card-data-alerts">

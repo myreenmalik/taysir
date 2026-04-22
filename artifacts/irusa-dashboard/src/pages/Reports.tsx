@@ -1,6 +1,7 @@
 import { useGetRevenueByEvent, useGetDonorConversionReport, getGetRevenueByEventQueryKey, getGetDonorConversionReportQueryKey, getGetFRFStatusReportQueryKey, getGetCauseInterestReportQueryKey, useGetFRFStatusReport, useGetCauseInterestReport } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from "recharts";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 export default function Reports() {
   const { data: revenueData, isLoading: loadingRevenue } = useGetRevenueByEvent({ query: { queryKey: getGetRevenueByEventQueryKey() } });
@@ -23,10 +24,13 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Reports & Analytics</h1>
-        <p className="text-muted-foreground">Deep dive into event performance and donor metrics.</p>
-      </div>
+      <PageHeader
+        number="05"
+        eyebrow="Reports"
+        title="Reports"
+        arabic="التقارير"
+        subtitle="Deep dive into event performance and donor metrics."
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="col-span-1 lg:col-span-2">

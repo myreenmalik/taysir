@@ -24,6 +24,7 @@ import { useMemo, useCallback, useState } from "react";
 import { Search, ChevronDown, X, CalendarIcon, Sparkles, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 const CATEGORIES = ["major", "lapsed", "recurring", "emergency-responder", "seasonal", "one-time"] as const;
 const PERSONALITIES = ["Altruist", "Investor", "Repayer"] as const;
@@ -228,27 +229,30 @@ export default function DonorsList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Donors</h1>
-          <p className="text-muted-foreground">Manage donor profiles and relationship history.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={handleGenerateFollowUps}
-            disabled={generateFollowUps.isPending}
-            data-testid="button-generate-followups"
-            className="gap-2"
-          >
-            <Sparkles className="h-4 w-4" />
-            {generateFollowUps.isPending ? "Generating…" : "Generate follow-ups"}
-          </Button>
-          <Link href="/donors/new" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
-            New Donor
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        number="03"
+        eyebrow="Donors"
+        title="Donors"
+        arabic="المتبرعون"
+        subtitle="Full giving history and AI-powered personalized outreach."
+        actions={
+          <>
+            <Button
+              variant="outline"
+              onClick={handleGenerateFollowUps}
+              disabled={generateFollowUps.isPending}
+              data-testid="button-generate-followups"
+              className="gap-2"
+            >
+              <Sparkles className="h-4 w-4" />
+              {generateFollowUps.isPending ? "Generating…" : "Generate follow-ups"}
+            </Button>
+            <Link href="/donors/new" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+              New Donor
+            </Link>
+          </>
+        }
+      />
 
       {lastGenSummary && lastGenSummary.created > 0 && (
         <div className="rounded-md border bg-primary/5 px-4 py-3 text-sm" data-testid="banner-followups-generated">

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Upload, AlertCircle, CheckCircle2, RotateCcw, Sparkles, Trash2 } from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 const API_BASE = `${import.meta.env.BASE_URL}api`.replace(/\/+/g, "/");
 
@@ -604,12 +605,13 @@ export default function ImportData() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Import Data</h1>
-        <p className="text-muted-foreground mt-1">
-          Upload any spreadsheet — donors, donations, events, or a mix. The system reads it, figures out what's where, and walks you through the rest.
-        </p>
-      </div>
+      <PageHeader
+        number="06"
+        eyebrow="Import"
+        title="Import"
+        arabic="الاستيراد"
+        subtitle="Upload any spreadsheet — donors, donations, events, or a mix. The system reads it, figures out what's where, and walks you through the rest."
+      />
 
       {/* Step indicator */}
       <div className="flex items-center gap-2 text-sm">

@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Link } from "wouter";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useMemo, useState } from "react";
 import { Search, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -153,15 +154,18 @@ export default function EventsList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Events</h1>
-          <p className="text-muted-foreground">Manage and track all fundraising events.</p>
-        </div>
-        <Link href="/events/new" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
-          New Event
-        </Link>
-      </div>
+      <PageHeader
+        number="02"
+        eyebrow="Events"
+        title="Events"
+        arabic="الفعاليات"
+        subtitle="Every gathering, every dollar — tracked in one place."
+        actions={
+          <Link href="/events/new" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+            New Event
+          </Link>
+        }
+      />
 
       <Card>
         <CardHeader className="pb-3 space-y-4">
