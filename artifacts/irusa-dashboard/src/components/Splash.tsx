@@ -10,11 +10,11 @@ export function Splash() {
 
   useEffect(() => {
     if (phase === "hidden") return;
-    const fadeTimer = window.setTimeout(() => setPhase("fading"), 2800);
+    const fadeTimer = window.setTimeout(() => setPhase("fading"), 5200);
     const doneTimer = window.setTimeout(() => {
       setPhase("hidden");
       sessionStorage.setItem(STORAGE_KEY, "1");
-    }, 3800);
+    }, 6500);
     return () => {
       window.clearTimeout(fadeTimer);
       window.clearTimeout(doneTimer);
@@ -25,7 +25,7 @@ export function Splash() {
 
   return (
     <div
-      className={`fixed inset-0 z-[100] overflow-hidden bg-background transition-opacity duration-1000 ${
+      className={`fixed inset-0 z-[100] overflow-hidden bg-background transition-opacity duration-[1300ms] ${
         phase === "fading" ? "opacity-0 pointer-events-none" : "opacity-100"
       }`}
       data-testid="splash-screen"
