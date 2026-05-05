@@ -825,7 +825,7 @@ async function fixSerialSequence(): Promise<void> {
   );
 }
 
-async function main(): Promise<void> {
+export async function seedDonors(): Promise<void> {
   console.log(`Seeding donors (today=${TODAY.toISOString().slice(0, 10)})...`);
 
   // Sanity: warn if any seeded eventId is not present.
@@ -912,9 +912,5 @@ async function main(): Promise<void> {
   console.log(`By personality: ${JSON.stringify(byPersonality)}`);
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  });
+// CLI entry lives in scripts/seedDonorsCli.ts so the bundled server build
+// doesn't accidentally invoke + exit during startup.

@@ -9,7 +9,7 @@
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "backfill:donor-tiers": "tsx ./scripts/backfillDonorTiers.ts",
-    "seed:donors": "tsx ./scripts/seedDonors.ts"
+    "seed:donors": "tsx ./scripts/seedDonorsCli.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*",
