@@ -62,13 +62,17 @@ A hackathon-ready web app for Islamic Relief USA that replaces messy spreadsheet
 
 ## Sample Data
 
-Seeded with 10 realistic events, 10 donors, 16 donations, 18 revenue entries, 4 FRF records, 10 allocations, 15 attendees, 9 logistics tasks, 8 follow-up tasks.
+Seeded with 10 realistic events, ~60 donors across all categories/tiers/personalities, ~140 donations (multi-year, ~40 event-linked), ~37 attendees, plus revenue entries, FRF records, allocations, logistics tasks, and follow-up tasks.
 
 ## Running Locally
 
 Both workflows start automatically:
 1. `artifacts/api-server: API Server` — builds and starts Express on PORT 8080
 2. `artifacts/irusa-dashboard: web` — starts Vite dev server
+
+### Seed scripts
+- `pnpm --filter @workspace/api-server run seed:donors` — idempotently seeds donor mock data (donors keyed by email; seeded donations/attendees tagged `[seed:v1]` so re-runs replace only seeded rows). Recomputes donor stats via `recomputeDonorStats`.
+- `pnpm --filter @workspace/api-server run backfill:donor-tiers` — recomputes category/tier/personality for every donor.
 
 ## Environment Variables
 

@@ -8,7 +8,8 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "backfill:donor-tiers": "tsx ./scripts/backfillDonorTiers.ts"
+    "backfill:donor-tiers": "tsx ./scripts/backfillDonorTiers.ts",
+    "seed:donors": "tsx ./scripts/seedDonors.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*",
