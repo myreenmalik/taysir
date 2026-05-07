@@ -873,6 +873,16 @@ export async function seedDonors(): Promise<void> {
 
   await fixSerialSequence();
 
+  // Clean up orphan donations whose donor row no longer exists. (Carryover from
+  // earlier prod data where a donor was deleted but their donations weren't.)
+  const deletedOrphanDonations = await db.execute(
+    sql`DELETE FROM donations WHERE donor_id NOT IN (SELECT id FROM donors)`,
+  );
+  const orphanDonationCount = deletedOrphanDonations.rowCount ?? 0;
+  if (orphanDonationCount > 0) {
+    console.log(`Orphan donations removed: ${orphanDonationCount}`);
+  }
+
   // Clean up orphan donors that aren't part of this seed and have no donations.
   // (E.g. carryover rows from earlier production deploys before the seed existed.)
   const seedEmails = new Set(DONORS.map((d) => d.email.toLowerCase()));
