@@ -18,16 +18,21 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-// Auto-seed donor demo data if the donors table is sparse.
-// This makes a freshly-deployed production environment match dev,
-// since Replit's publish flow doesn't copy seed data across DBs.
+// Auto-seed donor demo data on startup.
+// - If donors table is sparse (< 30) → seed it (fresh prod after deploy).
+// - If there are orphan donors with no donations → re-seed to clean them up.
+// The seed is idempotent (upserts by email, removes only seed-tagged data).
 async function ensureSeeded(): Promise<void> {
   try {
     const [{ count }] = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(donorsTable);
-    if (count < 30) {
-      logger.info({ existingDonors: count }, "Auto-seeding donor demo data");
+    const orphanResult = await db.execute(
+      sql`SELECT COUNT(*)::int AS orphans FROM donors d LEFT JOIN donations dn ON dn.donor_id = d.id WHERE dn.id IS NULL`,
+    );
+    const orphans = (orphanResult.rows[0] as { orphans: number } | undefined)?.orphans ?? 0;
+    if (count < 30 || orphans > 0) {
+      logger.info({ existingDonors: count, orphans }, "Auto-seeding donor demo data");
       await seedDonors();
       logger.info("Auto-seed complete");
     }

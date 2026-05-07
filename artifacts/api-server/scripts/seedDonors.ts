@@ -873,6 +873,28 @@ export async function seedDonors(): Promise<void> {
 
   await fixSerialSequence();
 
+  // Clean up orphan donors that aren't part of this seed and have no donations.
+  // (E.g. carryover rows from earlier production deploys before the seed existed.)
+  const seedEmails = new Set(DONORS.map((d) => d.email.toLowerCase()));
+  const allRows = await db.select().from(donorsTable);
+  let orphansDeleted = 0;
+  for (const row of allRows) {
+    const isSeeded = row.email && seedEmails.has(row.email.toLowerCase());
+    if (isSeeded) continue;
+    const donationCount = await db
+      .select({ c: sql<number>`count(*)::int` })
+      .from(donationsTable)
+      .where(eq(donationsTable.donorId, row.id));
+    if ((donationCount[0]?.c ?? 0) === 0) {
+      await db.delete(attendeesTable).where(eq(attendeesTable.donorId, row.id));
+      await db.delete(donorsTable).where(eq(donorsTable.id, row.id));
+      orphansDeleted++;
+    }
+  }
+  if (orphansDeleted > 0) {
+    console.log(`Orphan donors removed: ${orphansDeleted}`);
+  }
+
   // Recompute stats for every donor (uses the source-of-truth helper).
   const allDonors = await db.select({ id: donorsTable.id }).from(donorsTable);
   for (const d of allDonors) {
