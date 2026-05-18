@@ -93,13 +93,9 @@ packages/
 
 ## Running Locally
 
-```bash
+```
+cp .env.example .env
+# fill in your values, then:
 pnpm install
 pnpm dev
 ```
-
-Make sure `DATABASE_URL` and `AI_INTEGRATIONS_OPENAI_API_KEY` are set in your environment.
-
----
-
-*Taysir — تيسير. Ease, by design.*
